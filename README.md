@@ -10,7 +10,10 @@ You can read more about the problem domain in the [Software Requirement Specific
 3. log in with Google in the browser window clasp opened
 4. in your Google Drive, create a new spreadsheet
 5. from Google Sheets, choose the menu option `Extensions` then `Apps Script`
-6. 
+6. from the Google Script editor, go to the `project settings` on the left
+7. copy the `Script ID`
+8. copy the file `template.clasp.json` as `.clasp.json`, then fill it out
+9. `clasp push` 
 
 
 ## Helpful Links
