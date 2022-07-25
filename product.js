@@ -23,6 +23,7 @@ class ProductType {
         mustHaveValue(minimum);
         mustBeNonNegative(minimum);
         mustHaveValue(notificationInterval);
+        mustBePositive(notificationInterval);
 
         this.name = name;
         this.quantity = quantity;
@@ -52,13 +53,13 @@ function testProductType(){
     new ProductType(name, amount);
     new ProductType(name, 0);
     assertThrows(()=>new ProductType(name, null));
-    assertThrows(()=>new ProductType(name -amount));
+    assertThrows(()=>new ProductType(name, -amount));
 
     // minimum must be defined and non-negative
     const minimum = 3;
     new ProductType(name, amount, minimum);
     new ProductType(name, amount, 0);
-    assertThrows(()=>new ProductType(name, amount, undefined));
+    assertThrows(()=>new ProductType(name, amount, null));
     assertThrows(()=>new ProductType(name, amount, -minimum));
 
     // notificationInterval must be defined and positive
