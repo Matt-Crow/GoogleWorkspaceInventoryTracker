@@ -1,9 +1,25 @@
 /**
- * This module is responsible for services related to ProductTypes
+ * This module is responsible for services related to 
+ * 
+ * Data class: ProductType
+ * #----------------------#--------#
+ * |                 name | string |
+ * |             quantity | int    |
+ * |              minimum | int    |
+ * | notificationInterval | int    |
+ * |         lastNotified | Date?  |
+ * #----------------------#--------#
  */
 
 
 
+const DEFAULT_NOTIFICATION_INTERVAL = 7; // measured in days
+
+
+/**
+ * the ProductType class represents a type of product that can be tracked by the
+ * system and the various tracking parameters associated with the product
+ */
 class ProductType {
     /**
      * While this constructor can be called directly, it usually preferable to
@@ -16,7 +32,7 @@ class ProductType {
      *  be asked to update the quantity of this product type (measured in days)
      * @param {Date} lastNotified - the last time quantity was updated 
      */
-    constructor(name, quantity=0, minimum=0, notificationInterval=7, lastNotified=null){
+    constructor(name, quantity=0, minimum=0, notificationInterval=DEFAULT_NOTIFICATION_INTERVAL, lastNotified=null){
         mustHaveValue(name);
         mustHaveValue(quantity);
         mustBeNonNegative(quantity);
@@ -35,10 +51,90 @@ class ProductType {
 
 
 /**
+ * utilizes immutable builder design pattern: each "with____" method returns a
+ * new instance of ProductTypeBuilder
+ */
+class ProductTypeBuilder {
+    constructor(name=null, quantity=0, minimum=0, notificationInterval=DEFAULT_NOTIFICATION_INTERVAL, lastNotified=null){
+        this.name = name;
+        this.quantity = quantity;
+        this.minimum = minimum;
+        this.notificationInterval = notificationInterval;
+        this.lastNotified = lastNotified;
+    }
+
+    withName(name){
+        mustHaveValue(name);
+        return new ProductTypeBuilder(
+            name,
+            this.quantity,
+            this.minimum,
+            this.notificationInterval,
+            this.lastNotified
+        );
+    }
+
+    withQuantity(quantity){
+        mustBeNonNegative(quantity);
+        return new ProductTypeBuilder(
+            this.name,
+            quantity,
+            this.minimum,
+            this.notificationInterval,
+            this.lastNotified
+        );
+    }
+
+    withMinimum(minimum){
+        mustBeNonNegative(minimum);
+        return new ProductTypeBuilder(
+            this.name,
+            this.quantity,
+            minimum,
+            this.notificationInterval,
+            this.lastNotified
+        );
+    }
+
+    withNotificationInterval(notificationInterval){
+        mustBePositive(notificationInterval);
+        return new ProductTypeBuilder(
+            this.name,
+            this.quantity,
+            this.minimum,
+            notificationInterval,
+            this.lastNotified
+        );
+    }
+
+    withLastNotified(lastNotified){
+        return new ProductTypeBuilder(
+            this.name,
+            this.quantity,
+            this.minimum,
+            this.notificationInterval,
+            lastNotified
+        );
+    }
+
+    build(){
+        return new ProductType(
+            this.name,
+            this.quantity,
+            this.minimum,
+            this.notificationInterval,
+            this.lastNotified
+        );
+    }
+}
+
+
+/**
  * runs all unit tests for this module, throwing an exception if any fail
  */
 function testProductTypeModule(){
     testProductType();
+    // TODO might want tests for ProductTypeBuilder
 }
 
 function testProductType(){
