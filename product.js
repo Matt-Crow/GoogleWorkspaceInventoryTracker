@@ -48,12 +48,12 @@ class ProductType {
         this.lastNotified = lastNotified;
     }
 
-    equals(other){
+    dataEquals(other){
         return this.name === other.name &&
             this.quantity === other.quantity &&
-            this.minimum === other.quantity &&
+            this.minimum === other.minimum &&
             this.notificationInterval === other.notificationInterval &&
-            this.lastNotified === other.lastNotified
+            this.lastNotified === other.lastNotified;
     }
 
     copy(){
@@ -217,6 +217,12 @@ class AbstractProductTypeRepository {
     }
 }
 
+/**
+ * ProductTypes are considered equal if their names are the same, ignoring case
+ * 
+ * @param {string} name 
+ * @returns the normalized product type name
+ */
 function normalizeProductTypeName(name){
     return name.toLowerCase();
 }
@@ -253,9 +259,32 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
         }
         return this.products.get(normalizeProductTypeName(name)).copy();
     }
+
+    getAllProductTypes(){
+        return Array.from(this.products.values()).map(pt => pt.copy());
+    }
+
+    updateProductType(productType){
+        const name = normalizeProductTypeName(productType.name);
+        if(!this.hasProductTypeWithName(name)){
+            throw new Error(`Cannot update product type with name "${name}", as no product with that name exists`);
+        }
+        this.deleteProductTypeByName(name);
+        this.addProductType(productType);
+    }
+
+    deleteProductTypeByName(name){
+        if(!this.hasProductTypeWithName(name)){
+            throw new Error(`Cannot delete product type with name "${name}", as no product with that name exists`);
+        }
+        this.products.delete(normalizeProductTypeName(name));
+    }
+
+    deleteAll(){
+        this.products.clear();
+    }
 }
 
-// TODO caching product type repo that caches in InMemory but forwards to Google
 
 
 /**
@@ -299,12 +328,30 @@ function testProductType(){
 
 function testInMemoryProductTypeRepository(){
     const data = new ProductType("foo");
+    const productTypeComparator = (a, b) => a.dataEquals(b);
 
     let sut = new InMemoryProductTypeRepository();
     sut.addProductType(data);
-    assertContains(data, sut.products.values(), (a, b)=>a.equals(b));
+    assertContains(data, sut.products.values(), productTypeComparator);
 
     sut = new InMemoryProductTypeRepository([data]);
-    const actual = sut.getProductTypeByName(data.name);
-    assert(data.equals(actual));
+    let actual = sut.getProductTypeByName(data.name);
+    assert(data.dataEquals(actual));
+
+    const values = ["foo", "bar", "baz"].map(n => new ProductType(n)); 
+    sut = new InMemoryProductTypeRepository(values);
+    actual = sut.getAllProductTypes();
+    assert(3 === actual.length);
+    assertContains(values[0], actual, productTypeComparator);
+    assertContains(values[1], actual, productTypeComparator);
+    assertContains(values[2], actual, productTypeComparator);
+
+    sut = new InMemoryProductTypeRepository([data]);
+    let changed = data.copy();
+    changed.quantity += 1;
+    sut.updateProductType(changed);
+    actual = sut.getProductTypeByName(data.name);
+    assert(changed.dataEquals(actual));
+    assert(!data.dataEquals(actual));
+
 }
