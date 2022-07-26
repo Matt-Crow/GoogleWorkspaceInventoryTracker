@@ -3,7 +3,8 @@
  * 
  * void assert(boolean)
  * void assertThrows(void function())
- * void assertContains(T, T[])
+ * void assertContains(T, T[], boolean function(T, T))
+ * void assertDoesNotContain(T, T[], boolean function(T, T))
  * 
  * void mustBeNonNegative(number)
  * void mustBePositive(number)
@@ -33,6 +34,12 @@ function assertThrows(fn){
 function assertContains(item, collection, comparator=(a, b)=>a===b){
     if(!Array.from(collection).some((curr)=>comparator(curr, item))){
         throw new Error(`${collection} does not contain ${item}`);
+    }
+}
+
+function assertDoesNotContain(item, collection, comparator=(a, b)=>a===b){
+    if(Array.from(collection).some((curr)=>comparator(curr, item))){
+        throw new Error(`${collection} does contains ${item}`);
     }
 }
 

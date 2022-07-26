@@ -1,5 +1,5 @@
 /**
- * This module is responsible for services related to 
+ * This module is responsible for services related to ProductTypes
  * 
  * Data class: ProductType
  * #----------------------#--------#
@@ -215,6 +215,10 @@ class AbstractProductTypeRepository {
     deleteAll(){
         throw new Error("deleteAll is not implemented");
     }
+
+    save(){
+        throw new Error("save is not implemented");
+    }
 }
 
 /**
@@ -283,8 +287,41 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
     deleteAll(){
         this.products.clear();
     }
+
+    save(){
+
+    }
 }
 
+
+/**
+ * The ProductTypeService handles the business logic associated with 
+ * ProductTypes
+ */
+class ProductTypeService {
+    /**
+     * 
+     * @param {AbstractProductTypeRepository} repository 
+     */
+    constructor(repository){
+        this.repository = repository;
+    }
+
+    /**
+     * @param {ProductType[]} products 
+     */
+    handleLogForm(products){
+        products.forEach(product => {
+            const n = normalizeProductTypeName(product.name);
+            if(this.repository.hasProductTypeWithName(n)){
+                this.repository.updateProductType(product);
+            } else {
+                this.repository.addProductType(product);
+            }
+        });
+        this.repository.save();
+    }
+}
 
 
 /**
@@ -294,6 +331,7 @@ function testProductTypeModule(){
     testProductType();
     // TODO might want tests for ProductTypeBuilder
     testInMemoryProductTypeRepository();
+    testProductTypeService();
 }
 
 function testProductType(){
@@ -354,4 +392,25 @@ function testInMemoryProductTypeRepository(){
     assert(changed.dataEquals(actual));
     assert(!data.dataEquals(actual));
 
+}
+
+function testProductTypeService(){
+    const productTypeComparator = (a, b) => a.dataEquals(b);
+    const exists = new ProductType("foo");
+    const notYetAdded = new ProductType("bar");
+    const repo = new InMemoryProductTypeRepository([exists]);
+    const sut = new ProductTypeService(repo);
+    const expected = [
+        exists.copy(),
+        notYetAdded
+    ];
+    expected[0].quantity += 1;
+
+    sut.handleLogForm(expected);
+    const actual = repo.getAllProductTypes();
+
+    assert(expected.length === actual.length);
+    assertContains(expected[0], actual, productTypeComparator);
+    assertContains(expected[1], actual, productTypeComparator);
+    assertDoesNotContain(exists, actual);
 }
