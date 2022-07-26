@@ -1,7 +1,9 @@
 /**
  * This module contains miscillaneous utilities.
  * 
+ * void assert(boolean)
  * void assertThrows(void function())
+ * void assertContains(T, T[])
  * 
  * void mustBeNonNegative(number)
  * void mustBePositive(number)
@@ -9,6 +11,12 @@
  * void mustBeDefined(*)
  * void mustHaveValue(*)
  */
+
+function assert(bool){
+    if(!bool){
+        throw new Error();
+    }
+}
 
 function assertThrows(fn){
     let anExceptionWasThrown = false;
@@ -19,6 +27,12 @@ function assertThrows(fn){
     }
     if(!anExceptionWasThrown){
         throw new Error("Function failed to throw an error");
+    }
+}
+
+function assertContains(item, collection, comparator=(a, b)=>a===b){
+    if(!Array.from(collection).some((curr)=>comparator(curr, item))){
+        throw new Error(`${collection} does not contain ${item}`);
     }
 }
 
