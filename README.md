@@ -14,6 +14,8 @@ You can read more about the problem domain in the [Software Requirement Specific
 7. copy the `Script ID`
 8. copy the file `template.clasp.json` as `.clasp.json`, then fill it out
 9. `clasp push` 
+10. reload the Google sheet
+11. from the menu, select `G-WIT` => `Set up`
 
 
 ## Helpful Links
