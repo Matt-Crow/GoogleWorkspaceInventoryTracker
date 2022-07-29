@@ -101,19 +101,87 @@ class GoogleSheetsProductTypeRepository extends AbstractProductTypeRepository {
  * @param {string|undefined} namespace - can specify for testing
  */
 function setupWorkspace(workbook, namespace=""){
-    const inventorySheetName = sheetNameFor("inventory", namespace);
-    let inventorySheet = workbook.getSheetByName(inventorySheetName);
-    if(null === inventorySheet){ // create if it doesn't exist yet
-        inventorySheet = workbook.insertSheet(inventorySheetName);
+    deleteAllSheetsThatListenToForms(workbook, namespace); // temp hopefully
+    setupInventorySheet(workbook, namespace);
+    setupNewProductTypeForm(workbook, namespace);
+}
+
+function deleteAllSheetsThatListenToForms(workbook, namespace){
+    workbook.getSheets().filter(sheet => {
+        return sheet.getName().includes(namespace);
+    }).filter(sheet => {
+        return sheet.getFormUrl() !== null;
+    }).forEach(sheet => {
+        const formUrl = sheet.getFormUrl();
+        const form = FormApp.openByUrl(formUrl);
+        form.removeDestination();
+
+        const file = DriveApp.getFileById(form.getId());
+        file.setTrashed(true);
+
+        workbook.deleteSheet(sheet);
+    });
+}
+
+function setupInventorySheet(workbook, namespace){
+    ifSheetDoesNotExist(workbook, sheetNameFor("inventory", namespace), name => {
+        inventorySheet = workbook.insertSheet(name);
         inventorySheet.setFrozenRows(1);
         const headers = ["name", "quantity", "minimum", "notification interval", 
             "last notified"];
         const firstRow = inventorySheet.getRange(1, 1, 1, headers.length); // 1-indexed
         firstRow.setValues([headers]); // one row, which is headers
-    }
+    });
+}
 
-    const newProductTypeForm = createNewProductTypeForm(workbook, namespace);
-    newProductTypeForm.setDestination(FormApp.DestinationType.SPREADSHEET, workbook.getId());
+/**
+ * @param {SpreadsheetApp.Spreadsheet} workbook
+ * @param {string} sheetName 
+ * @param {void function(string)} doThis 
+ */
+function ifSheetDoesNotExist(workbook, sheetName, doThis){
+    if(null === workbook.getSheetByName(sheetName)){
+        doThis(sheetName);
+    }
+}
+
+function setupNewProductTypeForm(workbook, namespace){
+    ifSheetDoesNotExist(workbook, newProductTypeFormNameFor(namespace), name => {
+        const newProductTypeForm = createNewProductTypeForm(workbook, namespace);
+        newProductTypeForm.setDestination(
+            FormApp.DestinationType.SPREADSHEET, 
+            workbook.getId()
+        );
+        
+        /*
+        it looks like Form::setDestination runs asynchronously, yet cannot be
+        awaited, so by the time this next section runs, the sheet is NOT 
+        guaranteed to exist
+        
+        https://issuetracker.google.com/issues/36764101
+
+        Apparently, this is a feature, not a bug
+        */
+        
+        /*
+        // rename the sheet created by setDestination so it's easier to find
+        const formUrl = newProductTypeForm.getPublishedUrl();
+        console.log(`Searching for sheet listening to ${newProductTypeForm.getPublishedUrl()}...`);
+        const createdSheet = workbook.getSheets().find(sheet => {
+            console.log(`${sheet.getName()} listens to ${sheet.getFormUrl()}`);
+            return sheet.getFormUrl() === formUrl; // https://stackoverflow.com/a/51484165
+        });
+        createdSheet.setName(name);
+        */
+    });
+}
+
+function newProductTypeFormNameFor(namespace){
+    let name = "Add a new product type to the inventory";
+    if(namespace !== ""){
+        name += " - " + namespace;
+    }
+    return name;
 }
 
 /**
@@ -140,7 +208,9 @@ function createNewProductTypeForm(workbook, namespace=""){
         .requireNumberGreaterThan(0)
         .build();
     
-    const form = FormApp.create("New Product Type");
+    const formName = newProductTypeFormNameFor(namespace);
+    const form = FormApp.create(formName);
+    form.setTitle(formName); // not set by create
     form.setDescription("Add a new product type to the inventory.");
 
     form.addTextItem()
@@ -224,6 +294,7 @@ function testGoogleSheetsProductTypeRepository(){
     diagnose errors if one of these tests fails
     */
     removeTestSheetsFrom(workbook);
+    deleteAllSheetsThatListenToForms(workbook, "test");
 }
 
 function removeTestSheetsFrom(workbook){
