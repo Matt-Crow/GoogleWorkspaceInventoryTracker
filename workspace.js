@@ -64,7 +64,33 @@ class GoogleSheetsProductTypeRepository extends AbstractProductTypeRepository {
             throw new Error("code should not have gotten here");
         }
 
-        throw new Error("todo: parse row, ensure no NaNs, return DTO");
+        return this.convertRowToProductType(row);
+    }
+
+    convertRowToProductType(row){
+        /*
+        if the row was added via a call to addProductType with a ProductType
+        where lastNotified === null, the value of the cell will be an empty 
+        string, so this converts it back to null
+        */
+        const lastNotified = (row[4] === "") ? null : row[4];
+
+        // validation handled in constructor
+        const productType = new ProductType(
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            lastNotified
+        );
+
+        return productType;
+    }
+
+    getAllProductTypes(){
+        const allRows = this.sheet.getDataRange().getValues();
+        allRows.shift(); // removes header row
+        return allRows.map(this.convertRowToProductType);
     }
 }
 
@@ -85,8 +111,56 @@ function setupWorkspace(workbook, namespace=""){
         const firstRow = inventorySheet.getRange(1, 1, 1, headers.length); // 1-indexed
         firstRow.setValues([headers]); // one row, which is headers
     }
+
+    const newProductTypeForm = createNewProductTypeForm(workbook, namespace);
+    newProductTypeForm.setDestination(FormApp.DestinationType.SPREADSHEET, workbook.getId());
 }
 
+/**
+ * Creates the form which the stock keeper will use to add new product types to
+ * the inventory.
+ * @param {SpreadsheetApp.Spreadsheet} workbook 
+ * @param {string|undefined} namespace - can specify for testing
+ * @return {FormApp.Form} the created form
+ */
+function createNewProductTypeForm(workbook, namespace=""){
+    /*
+    Google Forms does not support number input fields, but uses text fields with
+    number validators instead. There are two important points to consider when
+    handling the submitted form:
+    1. some fields can be empty
+    2. numerical fields must be explicitely converted from strings
+    */
+    const mustBeANonNegativeNumber = FormApp.createTextValidation()
+        .setHelpText("Must be a non-negative number.")
+        .requireNumberGreaterThanOrEqualTo(0)
+        .build();
+    const mustBeAPositiveNumber = FormApp.createTextValidation()
+        .setHelpText("Must be a positive number.")
+        .requireNumberGreaterThan(0)
+        .build();
+    
+    const form = FormApp.create("New Product Type");
+    form.setDescription("Add a new product type to the inventory.");
+
+    form.addTextItem()
+        .setTitle("Product name")
+        .setRequired(true);
+
+    form.addTextItem()
+        .setTitle("How many are in stock now?")
+        .setValidation(mustBeANonNegativeNumber);
+    
+    form.addTextItem()
+        .setTitle("How many do you want to keep in stock at all times?")
+        .setValidation(mustBeANonNegativeNumber);
+    
+    form.addTextItem()
+        .setTitle("How many days should there be between each time I ask you to check this product's stock?")
+        .setValidation(mustBeAPositiveNumber);
+
+    return form;
+}
 
 /**
  * Each workbook should support multiple namespaces for testing purposes, though
@@ -140,6 +214,10 @@ function testGoogleSheetsProductTypeRepository(){
 
     const actual = sut.getProductTypeByName(expected.name);
     assert(expected.dataEquals(actual));
+
+    const all = sut.getAllProductTypes();
+    assert(1 === all.length, `length should be 1, not ${all.length}`);
+    assert(expected.dataEquals(all[0]));
 
     /*
     only remove test sheets if tests are successful, as this allows us to
