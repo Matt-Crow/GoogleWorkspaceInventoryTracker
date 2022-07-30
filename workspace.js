@@ -184,8 +184,46 @@ function setupNewProductTypeForm(workbook, namespace){
         });
         createdSheet.setName(name);
 
-        // todo listen for submissions
+        // listen for submissions. move this elsewhere
+        ScriptApp.newTrigger("onNewProductTypeFormSubmit")
+            .forSpreadsheet(workbook)
+            .onFormSubmit()
+            .create();
+        
+        /*
+        use this later
+        
+        const triggers = ScriptApp.getProjectTriggers();
+        const formSubmitTrigger = triggers.find(t => t.getHandlerFunction() === "onNewProductTypeFormSubmit");
+        if(formSubmitTrigger !== null){
+            ScriptApp.deleteTrigger(formSubmitTrigger);
+        }
+        */
     });
+}
+
+function onNewProductTypeFormSubmit(event){
+    console.log(JSON.stringify(event));
+    const row = event.values;
+    row.shift(); // remove first cell (timestamp)
+    
+    const name = row[0];
+    const quantity = parseInt(row[1]);
+    const minimum = parseInt(row[2]);
+    const notificationInterval = parseInt(row[3]);
+
+    const product = new ProductType(
+        name,
+        (isNaN(quantity)) ? undefined : quantity,
+        (isNaN(minimum)) ? undefined : minimum,
+        (isNaN(notificationInterval)) ? undefined : notificationInterval
+    );
+
+    const repo = new GoogleSheetsProductTypeRepository(
+        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetNameFor("inventory"))
+    );
+    const service = new ProductTypeService(repo);
+    service.handleNewProduct(product);
 }
 
 function newProductTypeFormNameFor(namespace){

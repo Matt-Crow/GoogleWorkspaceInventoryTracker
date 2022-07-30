@@ -41,7 +41,7 @@ class ProductType {
         mustHaveValue(notificationInterval);
         mustBePositive(notificationInterval);
 
-        this.name = name;
+        this.name = normalizeProductTypeName(name);
         this.quantity = quantity;
         this.minimum = minimum;
         this.notificationInterval = notificationInterval;
@@ -305,6 +305,14 @@ class ProductTypeService {
      */
     constructor(repository){
         this.repository = repository;
+    }
+
+    handleNewProduct(product){
+        if(this.repository.hasProductTypeWithName(product.name)){
+            console.error(`Duplicate product name received from new product form: ${product.name}`);
+        } else {
+            this.repository.addProductType(product);
+        }
     }
 
     /**
