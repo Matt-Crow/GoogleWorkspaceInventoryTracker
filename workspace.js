@@ -101,26 +101,34 @@ class GoogleSheetsProductTypeRepository extends AbstractProductTypeRepository {
  * @param {string|undefined} namespace - can specify for testing
  */
 function setupWorkspace(workbook, namespace=""){
-    deleteAllSheetsThatListenToForms(workbook, namespace); // temp hopefully
     setupInventorySheet(workbook, namespace);
     setupNewProductTypeForm(workbook, namespace);
 }
 
-function deleteAllSheetsThatListenToForms(workbook, namespace){
-    workbook.getSheets().filter(sheet => {
-        return sheet.getName().includes(namespace);
-    }).filter(sheet => {
-        return sheet.getFormUrl() !== null;
-    }).forEach(sheet => {
+function deleteNamespace(workbook, namespace){
+    deleteSheet(workbook, sheetNameFor("inventory", namespace));
+    deleteSheet(workbook, newProductTypeFormNameFor(namespace));
+}
+
+/**
+ * Deletes a sheet and any attached formsfrom the workbook if the sheet exists.
+ * @param {SpreadsheetApp.Spreadsheet} workbook 
+ * @param {string} sheetName 
+ */
+function deleteSheet(workbook, sheetName){
+    const sheet = workbook.getSheetByName(sheetName);
+    if(sheet !== null){
         const formUrl = sheet.getFormUrl();
-        const form = FormApp.openByUrl(formUrl);
-        form.removeDestination();
-
-        const file = DriveApp.getFileById(form.getId());
-        file.setTrashed(true);
-
+        if(formUrl !== null){
+            // delete attached form
+            const form = FormApp.openByUrl(formUrl);
+            form.removeDestination();
+            
+            const file = DriveApp.getFileById(form.getId());
+            file.setTrashed(true);
+        }
         workbook.deleteSheet(sheet);
-    });
+    }
 }
 
 function setupInventorySheet(workbook, namespace){
@@ -154,30 +162,34 @@ function setupNewProductTypeForm(workbook, namespace){
         );
         
         /*
-        it looks like Form::setDestination runs asynchronously, yet cannot be
-        awaited, so by the time this next section runs, the sheet is NOT 
-        guaranteed to exist
+        The form is created using the Google Forms service instead of the Sheets
+        service, so the call to setDestination does not alter workbook. Sheets
+        caches the contents of the spreadsheet when it is accessed using
+        SpreadsheetApp, and the contents are only updated when a writing 
+        function is used. Since getSheets is a reading call, it reads the cached
+        list of sheets, which excludes the newly created destination sheet.
         
         https://issuetracker.google.com/issues/36764101
-
-        Apparently, this is a feature, not a bug
         */
+        SpreadsheetApp.flush(); // updates the workbook variable
         
-        /*
         // rename the sheet created by setDestination so it's easier to find
-        const formUrl = newProductTypeForm.getPublishedUrl();
-        console.log(`Searching for sheet listening to ${newProductTypeForm.getPublishedUrl()}...`);
-        const createdSheet = workbook.getSheets().find(sheet => {
-            console.log(`${sheet.getName()} listens to ${sheet.getFormUrl()}`);
-            return sheet.getFormUrl() === formUrl; // https://stackoverflow.com/a/51484165
+        // this URL solution doesn't work: https://stackoverflow.com/a/51484165
+        const formId = newProductTypeForm.getId();
+        const createdSheet = workbook.getSheets().filter(sheet => {
+            return null !== sheet.getFormUrl();
+        }).find(sheet => {
+            const form = FormApp.openByUrl(sheet.getFormUrl());
+            return form.getId() === formId; 
         });
         createdSheet.setName(name);
-        */
+
+        // todo listen for submissions
     });
 }
 
 function newProductTypeFormNameFor(namespace){
-    let name = "Add a new product type to the inventory";
+    let name = "New Product Type";
     if(namespace !== ""){
         name += " - " + namespace;
     }
@@ -210,7 +222,6 @@ function createNewProductTypeForm(workbook, namespace=""){
     
     const formName = newProductTypeFormNameFor(namespace);
     const form = FormApp.create(formName);
-    form.setTitle(formName); // not set by create
     form.setDescription("Add a new product type to the inventory.");
 
     form.addTextItem()
@@ -271,7 +282,7 @@ function testSheetNameFor(){
 
 function testGoogleSheetsProductTypeRepository(){
     const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    removeTestSheetsFrom(workbook);
+    deleteNamespace(workbook, "test");
     setupWorkspace(workbook, "test");
 
     const sheet = workbook.getSheetByName(sheetNameFor("inventory", "test"));
@@ -293,14 +304,5 @@ function testGoogleSheetsProductTypeRepository(){
     only remove test sheets if tests are successful, as this allows us to
     diagnose errors if one of these tests fails
     */
-    removeTestSheetsFrom(workbook);
-    deleteAllSheetsThatListenToForms(workbook, "test");
-}
-
-function removeTestSheetsFrom(workbook){
-    // expand once we have more test sheets
-    const inventorySheet = workbook.getSheetByName(sheetNameFor("inventory", "test"));
-    if(inventorySheet !== null){
-        workbook.deleteSheet(inventorySheet);
-    }
+    deleteNamespace(workbook, "test");
 }
