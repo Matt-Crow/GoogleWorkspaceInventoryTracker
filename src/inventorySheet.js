@@ -99,7 +99,7 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
 }
 
 function setupInventorySheet(workbook, namespace){
-    ifSheetDoesNotExist(workbook, sheetNameFor("inventory", namespace), name => {
+    ifSheetDoesNotExist(workbook, nameFor("inventory", namespace), name => {
         inventorySheet = workbook.insertSheet(name);
         inventorySheet.setFrozenRows(1);
         const headers = ["name", "quantity", "minimum", "notification interval", 
@@ -116,7 +116,7 @@ function testGoogleSheetsProductTypeRepository(){
     deleteWorkspace(workbook, "test");
     setupWorkspace(workbook, "test");
 
-    const sheet = workbook.getSheetByName(sheetNameFor("inventory", "test"));
+    const sheet = workbook.getSheetByName(nameFor("inventory", "test"));
     const sut = new GoogleSheetsProductTypeRepository(sheet)
     const expected = new ProductType("product");
 

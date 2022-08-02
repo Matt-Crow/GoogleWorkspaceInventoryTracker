@@ -3,12 +3,8 @@
  * to the inventory.
  */
 
-function newProductTypeFormNameFor(namespace){
-    let name = "New Product Type";
-    if(namespace !== ""){
-        name += " - " + namespace;
-    }
-    return name;
+function newProductTypeFormNameFor(namespace=""){
+    return nameFor("New Product Type", namespace);
 }
 
 function onNewProductTypeFormSubmit(event){
@@ -27,9 +23,10 @@ function onNewProductTypeFormSubmit(event){
         (isNaN(minimum)) ? undefined : minimum,
         (isNaN(notificationInterval)) ? undefined : notificationInterval
     );
+    console.log(JSON.stringify(product));
 
     const repo = new GoogleSheetsProductTypeRepository(
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetNameFor("inventory"))
+        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nameFor("inventory"))
     );
     const service = new ProductTypeService(repo);
     service.handleNewProduct(product);
@@ -38,10 +35,10 @@ function onNewProductTypeFormSubmit(event){
 /**
  * Creates the form which the stock keeper will use to add new product types to
  * the inventory.
- * @param {string} name
+ * @param {string} namespace
  * @return {FormApp.Form} the created form
  */
- function createNewProductTypeForm(name){
+ function createNewProductTypeForm(namespace){
     /*
     Google Forms does not support number input fields, but uses text fields with
     number validators instead. There are two important points to consider when
@@ -58,7 +55,7 @@ function onNewProductTypeFormSubmit(event){
         .requireNumberGreaterThan(0)
         .build();
     
-    const form = FormApp.create(name);
+    const form = FormApp.create(newProductTypeFormNameFor(namespace));
     form.setDescription("Add a new product type to the inventory.");
 
     form.addTextItem()

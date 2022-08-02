@@ -11,6 +11,7 @@ function onOpen(){
 	ui.createMenu("G-WIT")
 		.addItem("Set up", "setup")
 		.addItem("Reset workspace", "resetWorkspace")
+		.addItem("Regenerate stock update form", "regenerateStockUpdateForm")
 		.addItem("Test", "test")
 		.addToUi();
 }
@@ -29,8 +30,15 @@ function setup(){
  */
 function resetWorkspace(){
 	const workbook = SpreadsheetApp.getActiveSpreadsheet();
-	deleteWorkspace(workbook, "");
+	deleteWorkspace(workbook);
 	setup();
+}
+
+/**
+ * this might be temporary
+ */
+function regenerateStockUpdateForm(){
+	regenerateStockUpdateFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
 
 /**

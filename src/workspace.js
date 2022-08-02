@@ -16,7 +16,15 @@ this does not automatically start handling forms, and is explicitly registered
 in setupFormHandler
 */
 function onFormSubmit(e){
-    onNewProductTypeFormSubmit(e);
+    /*
+    ugly duck-typing, but it looks like e doesn't have any other way of knowing
+    which form submitted it
+    */
+    if("Product name" in e.namedValues){
+        onNewProductTypeFormSubmit(e);
+    } else {
+        onStockUpdateFormSubmit(e);
+    }    
 }
 
 
@@ -28,26 +36,26 @@ class FormHelper {
     /**
      * 
      * @param {SpreadsheetApp.Spreadsheet} workbook 
-     * @param {string} name 
+     * @param {string} namespace 
+     * @param {(string)=>string} namespaceToName
      * @param {FormApp.Form function(string)} create
-     * @param {*} deleteForm 
      */
-    constructor(workbook, name, create, deleteForm){
+    constructor(workbook, namespace, namespaceToName, create){
         this.workbook = workbook;
-        this.name = name;
+        this.namespace = namespace;
+        this.name = namespaceToName(namespace);
         this.create = create;
-        this.deleteForm = deleteForm;
     }
 
     setup(){
-        const sheet = this.workbook.getSheetByName(this.name);
+        const sheet = this.workbook.getSheetByName(this.namespace);
         if(null === sheet){
             this._doSetup();
         }
     }
 
     _doSetup(){
-        const form = this.create(this.name);
+        const form = this.create(this.namespace);
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
             this.workbook.getId()
@@ -74,11 +82,11 @@ class FormHelper {
             const form = FormApp.openByUrl(sheet.getFormUrl());
             return form.getId() === formId; 
         });
-        createdSheet.setName(this.name);
+        createdSheet.setName(this.namespace);
     }
 
     deleteForm(){
-        deleteSheet(this.workbook, this.name);
+        deleteSheet(this.workbook, this.namespace);
     }
 }
 
@@ -93,10 +101,19 @@ function setupWorkspace(workbook, namespace=""){
 
     const newProductTypeFormHelper = new FormHelper(
         workbook,
-        newProductTypeFormNameFor(namespace),
+        namespace,
+        newProductTypeFormNameFor,
         createNewProductTypeForm
     );
     newProductTypeFormHelper.setup();
+
+    const stockUpdateFormHelper = new FormHelper(
+        workbook,
+        namespace,
+        stockUpdateFormNameFor,
+        createNewStockUpdateForm
+    );
+    stockUpdateFormHelper.setup();
 
     setupFormHandler(workbook);
 }
@@ -113,8 +130,9 @@ function setupFormHandler(workbook){
 }
 
 function deleteWorkspace(workbook, namespace=""){
-    deleteSheet(workbook, sheetNameFor("inventory", namespace));
+    deleteSheet(workbook, nameFor("inventory", namespace));
     deleteSheet(workbook, newProductTypeFormNameFor(namespace));
+    deleteSheet(workbook, stockUpdateFormNameFor(namespace));
     if("" === namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
@@ -161,15 +179,15 @@ function ifSheetDoesNotExist(workbook, sheetName, doThis){
 /**
  * Each workbook should support multiple namespaces for testing purposes, though
  * should also support a default, unspecified namespace
- * @param {string} sheetName 
+ * @param {string} resource - sheet or form name 
  * @param {string|undefined} namespace 
  * @returns the name for the given sheet within the given namespace
  */
-function sheetNameFor(sheetName, namespace=""){
-    mustHaveValue(sheetName);
+function nameFor(resource, namespace=""){
+    mustHaveValue(resource);
     mustHaveValue(namespace);
 
-    return ("" === namespace) ? sheetName : `${namespace}-${sheetName}`;
+    return ("" === namespace) ? resource : `${namespace}-${resource}`;
 }
 
 
@@ -179,18 +197,18 @@ Unit tests
 */
 
 function testWorkspaceModule(){
-    testSheetNameFor();
-    testGoogleSheetsProductTypeRepository();    
+    testNameFor();
+    testGoogleSheetsProductTypeRepository();  
 }
 
-function testSheetNameFor(){
+function testNameFor(){
     const sheetName = "foo";
     const namespace = "bar";
     
-    const sheetWithoutNamespace = sheetNameFor(sheetName);
+    const sheetWithoutNamespace = nameFor(sheetName);
     assert(sheetWithoutNamespace.includes(sheetName));
 
-    const sheetWithNamespace = sheetNameFor(sheetName, namespace);
+    const sheetWithNamespace = nameFor(sheetName, namespace);
     assert(sheetWithNamespace.includes(sheetName));
     assert(sheetWithNamespace.includes(namespace));
 }
