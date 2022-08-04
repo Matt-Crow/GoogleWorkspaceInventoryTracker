@@ -48,14 +48,14 @@ class FormHelper {
     }
 
     setup(){
-        const sheet = this.workbook.getSheetByName(this.namespace);
+        const sheet = this.workbook.getSheetByName(this.name);
         if(null === sheet){
             this._doSetup();
         }
     }
 
     _doSetup(){
-        const form = this.create(this.namespace);
+        const form = this.create(this.namespace); // not this.name
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
             this.workbook.getId()
@@ -82,11 +82,11 @@ class FormHelper {
             const form = FormApp.openByUrl(sheet.getFormUrl());
             return form.getId() === formId; 
         });
-        createdSheet.setName(this.namespace);
+        createdSheet.setName(this.name);
     }
 
     deleteForm(){
-        deleteSheet(this.workbook, this.namespace);
+        deleteSheet(this.workbook, this.name);
     }
 }
 
@@ -107,6 +107,15 @@ function setupWorkspace(workbook, namespace=""){
     );
     newProductTypeFormHelper.setup();
 
+    setupStockUpdateFormFor(workbook, namespace);
+
+    setupFormHandler(workbook);
+}
+
+/*
+Since this is needed by regenerateStockUpdateFormFor, moved to this function 
+ */
+function setupStockUpdateFormFor(workbook, namespace=""){
     const stockUpdateFormHelper = new FormHelper(
         workbook,
         namespace,
@@ -114,8 +123,6 @@ function setupWorkspace(workbook, namespace=""){
         createNewStockUpdateForm
     );
     stockUpdateFormHelper.setup();
-
-    setupFormHandler(workbook);
 }
 
 function setupFormHandler(workbook){

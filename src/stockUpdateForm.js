@@ -8,7 +8,35 @@ function stockUpdateFormNameFor(namespace=""){
 }
 
 function onStockUpdateFormSubmit(e){
+    /*
+    e.namedValues is formatted as
+    {
+        foo: ["answer to foo"],
+        bar: ["answer to bar"]
+    }
+    */
+    const fields = [];
+    for(let [k, v] of Object.entries(e.namedValues)){
+        fields.push({name: k, quantity: parseInt(v[0])});
+    }
+    
+    console.log(JSON.stringify(fields));
 
+    const products = fields.filter(answerToQuestion => {
+        return !isNaN(answerToQuestion.quantity);
+    }).filter(answerToQuestion => {
+        return "Timestamp" !== answerToQuestion.name;
+    }).map(answerToQuestion =>{
+        return new ProductType(answerToQuestion.name, answerToQuestion.quantity);
+    });
+
+    console.log(JSON.stringify(products));
+
+    const repo = new GoogleSheetsProductTypeRepository(
+        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nameFor("inventory"))
+    );
+    const service = new ProductTypeService(repo);
+    service.handleLogForm(products);
 }
 
 
@@ -42,5 +70,5 @@ function createNewStockUpdateForm(namespace=""){
 // probably use an "isStale" flag
 function regenerateStockUpdateFormFor(workbook, namespace=""){
     deleteSheet(workbook, stockUpdateFormNameFor(namespace));
-    setupWorkspace(workbook, namespace);
+    setupStockUpdateFormFor(workbook, namespace);
 }
