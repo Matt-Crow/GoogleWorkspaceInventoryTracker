@@ -120,6 +120,31 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
             throw new Error(`Failed to updated ProductType with name "${productType.name}"`);
         }
     }
+
+    deleteProductTypeByName(name){
+        name = normalizeProductTypeName(name);
+        if(!this.hasProductTypeWithName(name)){
+            throw new Error(`No ProductType exists with name "${name}"`);
+        }
+        let data = this.sheet.getDataRange().getValues();
+        const rowNum = data.findIndex(row => row[0] === name);
+        if(rowNum === -1){
+            throw new Error(`something went wrong in GoogleSheetsProductTypeRepository::deleteProductTypeByName("${name}")`);
+        }
+        this.sheet.deleteRow(rowNum + 1); // rowNum is 0-idx, deleteRow is 1-idx
+    }
+
+    deleteAll(){
+        const lastRow = this.sheet.getLastRow();
+        this.sheet.deleteRows(
+            2, // skip header
+            lastRow - 1 // has (lastRow) rows, so delete all but the first
+        );
+    }
+
+    save(){
+        
+    }
 }
 
 function setupInventorySheet(workbook, namespace){
