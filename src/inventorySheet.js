@@ -96,6 +96,30 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
         allRows.shift(); // removes header row
         return allRows.map(this.convertRowToProductType);
     }
+
+    updateProductType(productType){
+        let data = this.sheet.getDataRange().getValues();
+        let found = false;
+
+        // skip headers
+        for(let i = 1; !found && i < data.length; ++i){
+            if(data[i][0] === productType.name){
+                found = true;
+                let newRow = [
+                    productType.name, 
+                    productType.quantity,
+                    productType.minimum,
+                    productType.notificationInterval,
+                    new Date()
+                ];
+                this.sheet.getRange(i + 1, 1, 1, newRow.length).setValues([newRow]);
+            }
+        }
+
+        if(!found){
+            throw new Error(`Failed to updated ProductType with name "${productType.name}"`);
+        }
+    }
 }
 
 function setupInventorySheet(workbook, namespace){
