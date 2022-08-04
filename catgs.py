@@ -19,7 +19,7 @@ def catgs():
 
 
 def getJsFilesFrom(folder):
-    paths = pathlib.Path(folder).glob("*.js")
+    paths = pathlib.Path(folder).glob("**/*.js")
     return paths
 
 

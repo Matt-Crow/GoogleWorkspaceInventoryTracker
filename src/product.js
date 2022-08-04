@@ -16,15 +16,13 @@
 const DEFAULT_NOTIFICATION_INTERVAL = 7; // measured in days
 
 
+
 /**
  * the ProductType class represents a type of product that can be tracked by the
  * system and the various tracking parameters associated with the product
  */
 class ProductType {
     /**
-     * While this constructor can be called directly, it usually preferable to
-     * use the ProductTypeBuilder
-     * 
      * @param {string} name - an identifier for this type of product
      * @param {number} quantity - the amount of this product currently in stock 
      * @param {number} minimum - the system will report when quantity <= minimum
@@ -68,86 +66,12 @@ class ProductType {
 }
 
 
-/**
- * utilizes immutable builder design pattern: each "with____" method returns a
- * new instance of ProductTypeBuilder
- */
-class ProductTypeBuilder {
-    constructor(name=null, quantity=0, minimum=0, notificationInterval=DEFAULT_NOTIFICATION_INTERVAL, lastNotified=null){
-        this.name = name;
-        this.quantity = quantity;
-        this.minimum = minimum;
-        this.notificationInterval = notificationInterval;
-        this.lastNotified = lastNotified;
-    }
-
-    withName(name){
-        mustHaveValue(name);
-        return new ProductTypeBuilder(
-            name,
-            this.quantity,
-            this.minimum,
-            this.notificationInterval,
-            this.lastNotified
-        );
-    }
-
-    withQuantity(quantity){
-        mustBeNonNegative(quantity);
-        return new ProductTypeBuilder(
-            this.name,
-            quantity,
-            this.minimum,
-            this.notificationInterval,
-            this.lastNotified
-        );
-    }
-
-    withMinimum(minimum){
-        mustBeNonNegative(minimum);
-        return new ProductTypeBuilder(
-            this.name,
-            this.quantity,
-            minimum,
-            this.notificationInterval,
-            this.lastNotified
-        );
-    }
-
-    withNotificationInterval(notificationInterval){
-        mustBePositive(notificationInterval);
-        return new ProductTypeBuilder(
-            this.name,
-            this.quantity,
-            this.minimum,
-            notificationInterval,
-            this.lastNotified
-        );
-    }
-
-    withLastNotified(lastNotified){
-        return new ProductTypeBuilder(
-            this.name,
-            this.quantity,
-            this.minimum,
-            this.notificationInterval,
-            lastNotified
-        );
-    }
-
-    build(){
-        return new ProductType(
-            this.name,
-            this.quantity,
-            this.minimum,
-            this.notificationInterval,
-            this.lastNotified
-        );
-    }
-}
 
 /**
  * provides the interface for CRUD operations on ProductTypes
+ * 
+ * because of how Google script concatinates files together, class extension
+ * does not work, so this class does nothing but provide developer guidelines
  */
 class AbstractProductTypeRepository {
     /**
@@ -295,22 +219,26 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
 
 
 /**
- * The ProductTypeService handles the business logic associated with 
- * ProductTypes
+ * The ProductTypeService handles ProductTypes business logic
  */
 class ProductTypeService {
     /**
-     * 
      * @param {AbstractProductTypeRepository} repository 
      */
     constructor(repository){
         this.repository = repository;
     }
 
+    /**
+     * @returns {ProductType[]}
+     */
     getAllProductTypes(){
         return this.repository.getAllProductTypes();
     }
 
+    /**
+     * @param {ProductType} product 
+     */
     handleNewProduct(product){
         if(this.repository.hasProductTypeWithName(product.name)){
             console.error(`Duplicate product name received from new product form: ${product.name}`);
@@ -341,7 +269,6 @@ class ProductTypeService {
  */
 function testProductTypeModule(){
     testProductType();
-    // TODO might want tests for ProductTypeBuilder
     testInMemoryProductTypeRepository();
     testProductTypeService();
 }
@@ -403,7 +330,6 @@ function testInMemoryProductTypeRepository(){
     actual = sut.getProductTypeByName(data.name);
     assert(changed.dataEquals(actual));
     assert(!data.dataEquals(actual));
-
 }
 
 function testProductTypeService(){

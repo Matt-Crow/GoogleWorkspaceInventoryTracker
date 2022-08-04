@@ -4,18 +4,11 @@
  */
 
 
-/*
-Google script does not guarantee the order scripts are loaded in, so this cannot
-reliably extend AbstractProductTypeRepository. Thankfully, this does not rely on
-any implementation details of its superclass, so this is merely a suboptimal
-solution, not a wrong one.
-*/
-class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository {
+class GoogleSheetsProductTypeRepository {
     /**
      * @param {SpreadsheetApp.Sheet} sheet the "inventory" sheet of a workbook
      */
     constructor(sheet){
-        //super();
         this.sheet = sheet;
     }
 
@@ -35,9 +28,7 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
             getValues() returns Object[][], so the row argument here is Object[]
             */
             return row[0]; // flattens
-        }).map(normalizeProductTypeName); 
-        // normalizeProductTypeNames defined in product.js
-
+        }).map(normalizeProductTypeName);
         return namesInSheet.includes(normalizeProductTypeName(name));
     }
 
@@ -45,30 +36,18 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
         if(!this.hasProductTypeWithName(name)){
             throw new Error(`No product type with name "${name}"`);
         }
+
         name = normalizeProductTypeName(name);
         const allRows = this.sheet.getDataRange().getValues();
-        let row = null;
-        let found = false;
-        /*
-        using primitive for loop so it can break out of processing once it finds
-        a match instead of processing the rest of the sheet
-        */
-        // start at i = 1, as allRows[0] is the header row
-        for(let i = 1; !found && i < allRows.length; ++i){
-            row = allRows[i];
-            if(normalizeProductTypeName(row[0]) === name){
-                found = true;
-            }
-        }
+        allRows.shift(); // remove header
+        
+        const idx = allRows.findIndex(row => normalizeProductTypeName(row[0]) === name);
 
-        if(!found){
-            /*
-            if it goes here, there is likely a problem with hasProductTypeWithName
-            */
+        if(-1 === idx){
             throw new Error("code should not have gotten here");
         }
 
-        return this.convertRowToProductType(row);
+        return this.convertRowToProductType(allRows[idx]);
     }
 
     convertRowToProductType(row){
@@ -99,26 +78,23 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
 
     updateProductType(productType){
         let data = this.sheet.getDataRange().getValues();
-        let found = false;
+        data.shift(); // remove headers
+        
+        const idx = data.findIndex(row => normalizeProductTypeName(row[0]) === productType.name);
 
-        // skip headers
-        for(let i = 1; !found && i < data.length; ++i){
-            if(data[i][0] === productType.name){
-                found = true;
-                let newRow = [
-                    productType.name, 
-                    productType.quantity,
-                    productType.minimum,
-                    productType.notificationInterval,
-                    new Date()
-                ];
-                this.sheet.getRange(i + 1, 1, 1, newRow.length).setValues([newRow]);
-            }
-        }
-
-        if(!found){
+        if(-1 === idx){
             throw new Error(`Failed to updated ProductType with name "${productType.name}"`);
         }
+
+        let newRow = [
+            productType.name, 
+            productType.quantity,
+            productType.minimum,
+            productType.notificationInterval,
+            new Date()
+        ];
+        //                        translate from 0-idx to 1-idx, +1 for header
+        this.sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
     }
 
     deleteProductTypeByName(name){
@@ -126,12 +102,17 @@ class GoogleSheetsProductTypeRepository {//extends AbstractProductTypeRepository
         if(!this.hasProductTypeWithName(name)){
             throw new Error(`No ProductType exists with name "${name}"`);
         }
+
         let data = this.sheet.getDataRange().getValues();
+        data.shift();
+
         const rowNum = data.findIndex(row => row[0] === name);
+
         if(rowNum === -1){
             throw new Error(`something went wrong in GoogleSheetsProductTypeRepository::deleteProductTypeByName("${name}")`);
         }
-        this.sheet.deleteRow(rowNum + 1); // rowNum is 0-idx, deleteRow is 1-idx
+
+        this.sheet.deleteRow(rowNum + 2); // rowNum is 0-idx, deleteRow is 1-idx, +1 for header
     }
 
     deleteAll(){
