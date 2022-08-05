@@ -3,6 +3,13 @@
  * in a separate file from the bulk of the system, third-party dependencies are
  * isolated from the core system, allowing it to more easily port between 
  * implementations.
+ * 
+ * About NAMESPACES:
+ *  since some of the project's tests must interact with Google sheets, there
+ *  must be some way of preventing those tests from modifying the sheets used
+ *  by the application. To do this, NAMESPACES can be included in a sheet name
+ *  to designate who they belong to. This is done through the nameFor function:
+ *      nameFor(resourceName, namespace)
  */
 
 
@@ -48,14 +55,12 @@ class FormHelper {
     }
 
     setup(){
-        const sheet = this.workbook.getSheetByName(this.name);
-        if(null === sheet){
-            this._doSetup();
-        }
+        // does not bind 'this' context with just "this._doSetup" 
+        ifSheetDoesNotExist(this.workbook, this.name, ()=>this._doSetup());
     }
 
     _doSetup(){
-        const form = this.create(this.namespace); // not this.name
+        const form = this.create(this.namespace); // NOT this.name
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
             this.workbook.getId()
@@ -83,10 +88,6 @@ class FormHelper {
             return form.getId() === formId; 
         });
         createdSheet.setName(this.name);
-    }
-
-    deleteForm(){
-        deleteSheet(this.workbook, this.name);
     }
 }
 

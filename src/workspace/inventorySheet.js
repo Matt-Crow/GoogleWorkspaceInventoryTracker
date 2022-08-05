@@ -13,13 +13,17 @@ class GoogleSheetsProductTypeRepository {
     }
 
     addProductType(productType){
-        this.sheet.appendRow([
+        this.sheet.appendRow(this._productTypeToRow(productType));
+    }
+
+    _productTypeToRow(productType){
+        return [
             productType.name,
             productType.quantity,
             productType.minimum,
             productType.notificationInterval,
             productType.lastNotified
-        ]);
+        ];
     }
 
     hasProductTypeWithName(name){
@@ -86,13 +90,8 @@ class GoogleSheetsProductTypeRepository {
             throw new Error(`Failed to updated ProductType with name "${productType.name}"`);
         }
 
-        let newRow = [
-            productType.name, 
-            productType.quantity,
-            productType.minimum,
-            productType.notificationInterval,
-            new Date()
-        ];
+        productType.lastNotified = new Date();
+        const newRow = this._productTypeToRow(productType);
         //                        translate from 0-idx to 1-idx, +1 for header
         this.sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
     }

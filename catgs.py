@@ -24,9 +24,12 @@ def getJsFilesFrom(folder):
 
 
 def makeGlob(file):
-    content = f'\n// glob of {file.stem}\n'
+    content = f'// glob of {file.stem}\n'
     with open(file, "r") as f:
-        content += f.read()
+        for line in f:
+            line = line.rstrip()
+            if line is not "":
+                content += line + '\n'
     return content
 
 def makeHeader():

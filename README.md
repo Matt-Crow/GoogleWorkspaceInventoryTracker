@@ -11,9 +11,14 @@ You can read more about the problem domain in the [Software Requirement Specific
 2. copy the contents of `Code.js` to the clipboard
 3. in your Google Drive, create a new spreadsheet
 4. from Google Sheets, choose the menu option `Extensions` then `Apps Script`
-5. select everything in the `Code.js` file in the browser, then paste what you copied from step 2
+5. select everything in the `Code.js` file in the browser, then paste what you copied from step 2, then save
 6. reload the Google Sheet
-7. from Google sheets, select `G-WIT` => `Set up`
+7. from Google sheets, select `G-WIT` => `Set up` (it takes a bit for the menu to show up)
+8. when asked to authorize, click `Continue`
+9. sign in with your Google account
+10. click `Advanced`, then `Go to ... (unsafe)`
+11. click `allow`
+12. rerun `G-WIT` => `Set up`
 
 
 ### Developer Installation
@@ -30,6 +35,11 @@ You can read more about the problem domain in the [Software Requirement Specific
 10. `clasp push`
 11. reload the Google Sheet
 12. from Google sheets, select `G-WIT` => `Set up`
+13. when asked to authorize, click `Continue`
+14. sign in with your Google account
+15. click `Advanced`, then `Go to ... (unsafe)`
+16. click `allow`
+17. rerun `G-WIT` => `Set up`
 
 ## Menu options
 
