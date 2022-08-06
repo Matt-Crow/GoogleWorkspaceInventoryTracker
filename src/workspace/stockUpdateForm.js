@@ -41,7 +41,7 @@ function createNewStockUpdateForm(namespace=""){
         .build();
     
     const form = FormApp.create(stockUpdateFormNameFor(namespace));
-    form.setDescription("Update the inventory stock.");
+    form.setDescription("How many of each of these are in stock now?");
 
     const service = createProductService(namespace);
     const productNames = service.getAllProductTypes().map(pt => pt.name);
