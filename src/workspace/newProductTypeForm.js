@@ -85,9 +85,5 @@ function _onNewProductTypeFormSubmit(event){
     );
     console.log("New product: " + JSON.stringify(product));
 
-    const repo = new GoogleSheetsProductTypeRepository(
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nameFor("inventory"))
-    );
-    const service = new ProductTypeService(repo);
-    service.handleNewProduct(product);
+    createProductService().handleNewProduct(product);
 }

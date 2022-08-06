@@ -229,17 +229,26 @@ class ProductTypeService {
     }
 
     /**
-     * @param {ProductType[]} products 
+     * @param {ProductType[]} changes 
      */
-    handleLogForm(products){
-        products.forEach(product => {
-            const n = normalizeProductTypeName(product.name);
-            if(this.repository.hasProductTypeWithName(n)){
-                this.repository.updateProductType(product);
-            } else {
-                this.repository.addProductType(product);
+    handleLogForm(changes){
+        /*
+        the products created by the log form have no "minimum" field, so need to
+        retrieve that field from the current repository
+        */
+        const oldProducts = this.repository.getAllProductTypes();
+        const nameToProductType = new Map();
+        oldProducts.forEach(product=>nameToProductType.set(product.name, product));
+        changes.forEach(change=>{
+            if(!nameToProductType.has(change.name)){
+                console.error(`Log form contains new product: ${change.name}. Maybe regenerate the stock update form?`);
             }
+            nameToProductType.get(change.name).quantity = change.quantity;
         });
+
+        for(const changedProduct of nameToProductType.values()){
+            this.repository.updateProductType(changedProduct);
+        }
         this.repository.save();
     }
 }

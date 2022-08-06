@@ -4,6 +4,21 @@
  */
 
 
+
+/**
+ * @param {string|undefined} namespace
+ * @returns {ProductTypeService} an instance of ProductTypeService backed by a Google sheet as its
+ *  repository
+ */
+function createProductService(namespace=""){
+    const workbook = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = workbook.getSheetByName(_inventorySheetNameFor(namespace));
+    const repo = new GoogleSheetsProductTypeRepository(sheet);
+    const service = new ProductTypeService(repo);
+    return service;
+}
+
+
 class GoogleSheetsProductTypeRepository {
     /**
      * @param {SpreadsheetApp.Sheet} sheet the "inventory" sheet of a workbook
@@ -109,16 +124,35 @@ class GoogleSheetsProductTypeRepository {
     }
 }
 
-function setupInventorySheet(workbook, namespace){
-    ifSheetDoesNotExist(workbook, nameFor("inventory", namespace), name => {
-        inventorySheet = workbook.insertSheet(name);
-        inventorySheet.setFrozenRows(1);
-        const headers = ["name", "quantity", "minimum"];
-        const firstRow = inventorySheet.getRange(1, 1, 1, headers.length); // 1-indexed
-        firstRow.setValues([headers]); // one row, which is headers
-    });
+
+function inventorySheetModule(workbook, namespace){
+    return new Component(
+        workbook, 
+        namespace, 
+        _inventorySheetNameFor,
+        (ns)=>_setupInventorySheet(workbook, ns)
+    );
 }
 
+function _inventorySheetNameFor(namespace){
+    return nameFor("inventory", namespace);
+}
+
+function _setupInventorySheet(workbook, namespace){
+    inventorySheet = workbook.insertSheet(_inventorySheetNameFor(namespace));
+    inventorySheet.setFrozenRows(1);
+
+    const validation = SpreadsheetApp.newDataValidation()
+        .requireNumberGreaterThanOrEqualTo(0)
+        .setAllowInvalid(false)
+        .setHelpText("Quantity and minimum must both be a number at least 0")
+        .build();
+    const quantityAndMinimumColumns = inventorySheet.getRange("B2:C");
+    quantityAndMinimumColumns.setDataValidation(validation);
+
+    const headers = ["name", "quantity", "minimum"];
+    inventorySheet.appendRow(headers);
+}
 
 
 function testGoogleSheetsProductTypeRepository(){
@@ -126,7 +160,7 @@ function testGoogleSheetsProductTypeRepository(){
     deleteWorkspace(workbook, "test");
     setupWorkspace(workbook, "test");
 
-    const sheet = workbook.getSheetByName(nameFor("inventory", "test"));
+    const sheet = workbook.getSheetByName(_inventorySheetNameFor("test"));
     const sut = new GoogleSheetsProductTypeRepository(sheet)
     const expected = new ProductType("product");
 

@@ -30,11 +30,7 @@ function onStockUpdateFormSubmit(e){
 
     console.log(JSON.stringify(products));
 
-    const repo = new GoogleSheetsProductTypeRepository(
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nameFor("inventory"))
-    );
-    const service = new ProductTypeService(repo);
-    service.handleLogForm(products);
+    createProductService().handleLogForm(products);
 }
 
 
@@ -47,11 +43,7 @@ function createNewStockUpdateForm(namespace=""){
     const form = FormApp.create(stockUpdateFormNameFor(namespace));
     form.setDescription("Update the inventory stock.");
 
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = workbook.getSheetByName(nameFor("inventory", namespace));
-    const repo = new GoogleSheetsProductTypeRepository(sheet);
-    const service = new ProductTypeService(repo);
-
+    const service = createProductService(namespace);
     const productNames = service.getAllProductTypes().map(pt => pt.name);
 
     productNames.forEach(productName => {

@@ -40,18 +40,18 @@ function onFormSubmit(e){
 
 /*
 Circumvents the Google script inheritance issue caused by unpredictable 
-script execution order.
+script execution order. Also note that inheritance does not work as expected
+even when used in the same file as the superclass.
 */
 class Component {
     /**
-     * 
      * @param {SpreadsheetApp.Spreadsheet} workbook 
      * @param {string} namespace 
      * @param {(string)=>string} namespaceToName
-     * @param {FormApp.Form function(string)} create
-     * @param {undefined|(FormEvent)=>void} onSubmit
+     * @param {(string)=>Form|null|undefined} create
+     * @param {(FormEvent)=>void} onSubmit 
      */
-    constructor(workbook, namespace, namespaceToName, create, onSubmit=()=>{}){
+    constructor(workbook, namespace, namespaceToName, create, onSubmit){
         this.workbook = workbook;
         this.namespace = namespace;
         this.name = namespaceToName(namespace);
@@ -65,7 +65,13 @@ class Component {
     }
 
     _doSetup(){
-        const form = this.create(this.namespace); // NOT this.name
+        const formOrMaybeNot = this.create(this.namespace); // NOT this.name
+        if(formOrMaybeNot.setDestination){
+            this._doSetupForm(formOrMaybeNot);
+        }
+    }
+
+    _doSetupForm(form){
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
             this.workbook.getId()
@@ -111,7 +117,7 @@ class Component {
  * @param {string|undefined} namespace - can specify for testing
  */
 function setupWorkspace(workbook, namespace=""){
-    setupInventorySheet(workbook, namespace);
+    inventorySheetModule(workbook, namespace).setup();
     newProductTypeFormModule(workbook, namespace).setup();
     setupStockUpdateFormFor(workbook, namespace);
     setupFormHandler(workbook);
@@ -142,7 +148,7 @@ function setupFormHandler(workbook){
 }
 
 function deleteWorkspace(workbook, namespace=""){
-    deleteSheet(workbook, nameFor("inventory", namespace));
+    inventorySheetModule(workbook, namespace).delete();
     newProductTypeFormModule(workbook, namespace).delete();
     deleteSheet(workbook, stockUpdateFormNameFor(namespace));
     if("" === namespace){
