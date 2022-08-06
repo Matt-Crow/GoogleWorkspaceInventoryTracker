@@ -17,13 +17,7 @@ class GoogleSheetsProductTypeRepository {
     }
 
     _productTypeToRow(productType){
-        return [
-            productType.name,
-            productType.quantity,
-            productType.minimum,
-            productType.notificationInterval,
-            productType.lastNotified
-        ];
+        return [productType.name, productType.quantity, productType.minimum];
     }
 
     hasProductTypeWithName(name){
@@ -55,23 +49,12 @@ class GoogleSheetsProductTypeRepository {
     }
 
     convertRowToProductType(row){
-        /*
-        if the row was added via a call to addProductType with a ProductType
-        where lastNotified === null, the value of the cell will be an empty 
-        string, so this converts it back to null
-        */
-        const lastNotified = (row[4] === "") ? null : row[4];
-
         // validation handled in constructor
-        const productType = new ProductType(
+        return new ProductType(
             row[0],
             row[1],
-            row[2],
-            row[3],
-            lastNotified
+            row[2]
         );
-
-        return productType;
     }
 
     getAllProductTypes(){
@@ -90,7 +73,6 @@ class GoogleSheetsProductTypeRepository {
             throw new Error(`Failed to updated ProductType with name "${productType.name}"`);
         }
 
-        productType.lastNotified = new Date();
         const newRow = this._productTypeToRow(productType);
         //                        translate from 0-idx to 1-idx, +1 for header
         this.sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
@@ -131,8 +113,7 @@ function setupInventorySheet(workbook, namespace){
     ifSheetDoesNotExist(workbook, nameFor("inventory", namespace), name => {
         inventorySheet = workbook.insertSheet(name);
         inventorySheet.setFrozenRows(1);
-        const headers = ["name", "quantity", "minimum", "notification interval", 
-            "last notified"];
+        const headers = ["name", "quantity", "minimum"];
         const firstRow = inventorySheet.getRange(1, 1, 1, headers.length); // 1-indexed
         firstRow.setValues([headers]); // one row, which is headers
     });

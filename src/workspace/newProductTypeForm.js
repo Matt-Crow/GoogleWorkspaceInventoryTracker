@@ -66,10 +66,6 @@ function _createNewProductTypeForm(namespace){
     form.addTextItem()
         .setTitle("How many do you want to keep in stock at all times?")
         .setValidation(mustBeANonNegativeNumber);
-    
-    form.addTextItem()
-        .setTitle("How many days should there be between each time I ask you to check this product's stock?")
-        .setValidation(mustBeAPositiveNumber);
 
     return form;
 }
@@ -81,13 +77,11 @@ function _onNewProductTypeFormSubmit(event){
     const name = row[0];
     const quantity = parseInt(row[1]);
     const minimum = parseInt(row[2]);
-    const notificationInterval = parseInt(row[3]);
 
     const product = new ProductType(
         name,
         (isNaN(quantity)) ? undefined : quantity,
-        (isNaN(minimum)) ? undefined : minimum,
-        (isNaN(notificationInterval)) ? undefined : notificationInterval
+        (isNaN(minimum)) ? undefined : minimum
     );
     console.log("New product: " + JSON.stringify(product));
 

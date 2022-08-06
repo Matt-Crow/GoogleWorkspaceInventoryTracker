@@ -6,14 +6,8 @@
  * |                 name | string |
  * |             quantity | int    |
  * |              minimum | int    |
- * | notificationInterval | int    |
- * |         lastNotified | Date?  |
  * #----------------------#--------#
  */
-
-
-
-const DEFAULT_NOTIFICATION_INTERVAL = 7; // measured in days
 
 
 
@@ -28,40 +22,27 @@ class ProductType {
      * @param {number} minimum - the system will report when quantity <= minimum
      * @param {number} notificationInterval - how often the stock keeper should
      *  be asked to update the quantity of this product type (measured in days)
-     * @param {Date} lastNotified - the last time quantity was updated 
      */
-    constructor(name, quantity=0, minimum=0, notificationInterval=DEFAULT_NOTIFICATION_INTERVAL, lastNotified=null){
+    constructor(name, quantity=0, minimum=0){
         mustHaveValue(name);
         mustHaveValue(quantity);
         mustBeNonNegative(quantity);
         mustHaveValue(minimum);
         mustBeNonNegative(minimum);
-        mustHaveValue(notificationInterval);
-        mustBePositive(notificationInterval);
 
         this.name = normalizeProductTypeName(name);
         this.quantity = quantity;
         this.minimum = minimum;
-        this.notificationInterval = notificationInterval;
-        this.lastNotified = lastNotified;
     }
 
     dataEquals(other){
         return this.name === other.name &&
             this.quantity === other.quantity &&
-            this.minimum === other.minimum &&
-            this.notificationInterval === other.notificationInterval &&
-            this.lastNotified === other.lastNotified;
+            this.minimum === other.minimum;
     }
 
     copy(){
-        return new ProductType(
-            this.name, 
-            this.quantity, 
-            this.minimum, 
-            this.notificationInterval, 
-            this.lastNotified
-        );
+        return new ProductType(this.name, this.quantity, this.minimum);
     }
 }
 
@@ -293,14 +274,6 @@ function testProductType(){
     new ProductType(name, amount, 0);
     assertThrows(()=>new ProductType(name, amount, null));
     assertThrows(()=>new ProductType(name, amount, -minimum));
-
-    // notificationInterval must be defined and positive
-    const notificationInterval = 3;
-    new ProductType(name, amount, minimum, notificationInterval);
-    assertThrows(()=>new ProductType(name, amount, minimum, 0));
-    assertThrows(()=>new ProductType(name, amount, minimum, -notificationInterval));
-
-    // no constraints of lastNotified
 }
 
 function testInMemoryProductTypeRepository(){

@@ -19,8 +19,6 @@ function onStockUpdateFormSubmit(e){
     for(let [k, v] of Object.entries(e.namedValues)){
         fields.push({name: k, quantity: parseInt(v[0])});
     }
-    
-    console.log(JSON.stringify(fields));
 
     const products = fields.filter(answerToQuestion => {
         return !isNaN(answerToQuestion.quantity);
