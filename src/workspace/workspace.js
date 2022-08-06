@@ -23,35 +23,40 @@ this does not automatically start handling forms, and is explicitly registered
 in setupFormHandler
 */
 function onFormSubmit(e){
+    console.log("Received form submission: \n" + JSON.stringify(e));
     /*
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
     */
     if("Product name" in e.namedValues){
-        onNewProductTypeFormSubmit(e);
+        newProductTypeFormModule().receiveForm(e);
     } else {
         onStockUpdateFormSubmit(e);
     }    
 }
 
 
+
+
 /*
-Using this to get around the Google script inheritance issue caused by 
-unpredictable script execution order.
+Circumvents the Google script inheritance issue caused by unpredictable 
+script execution order.
 */
-class FormHelper {
+class Component {
     /**
      * 
      * @param {SpreadsheetApp.Spreadsheet} workbook 
      * @param {string} namespace 
      * @param {(string)=>string} namespaceToName
      * @param {FormApp.Form function(string)} create
+     * @param {undefined|(FormEvent)=>void} onSubmit
      */
-    constructor(workbook, namespace, namespaceToName, create){
+    constructor(workbook, namespace, namespaceToName, create, onSubmit=()=>{}){
         this.workbook = workbook;
         this.namespace = namespace;
         this.name = namespaceToName(namespace);
         this.create = create;
+        this.onSubmit = onSubmit;
     }
 
     setup(){
@@ -89,6 +94,14 @@ class FormHelper {
         });
         createdSheet.setName(this.name);
     }
+
+    delete(){
+        deleteSheet(this.workbook, this.name);
+    }
+
+    receiveForm(event){
+        this.onSubmit(event);
+    }
 }
 
 
@@ -99,17 +112,8 @@ class FormHelper {
  */
 function setupWorkspace(workbook, namespace=""){
     setupInventorySheet(workbook, namespace);
-
-    const newProductTypeFormHelper = new FormHelper(
-        workbook,
-        namespace,
-        newProductTypeFormNameFor,
-        createNewProductTypeForm
-    );
-    newProductTypeFormHelper.setup();
-
+    newProductTypeFormModule(workbook, namespace).setup();
     setupStockUpdateFormFor(workbook, namespace);
-
     setupFormHandler(workbook);
 }
 
@@ -117,7 +121,7 @@ function setupWorkspace(workbook, namespace=""){
 Since this is needed by regenerateStockUpdateFormFor, moved to this function 
  */
 function setupStockUpdateFormFor(workbook, namespace=""){
-    const stockUpdateFormHelper = new FormHelper(
+    const stockUpdateFormHelper = new Component(
         workbook,
         namespace,
         stockUpdateFormNameFor,
@@ -139,7 +143,7 @@ function setupFormHandler(workbook){
 
 function deleteWorkspace(workbook, namespace=""){
     deleteSheet(workbook, nameFor("inventory", namespace));
-    deleteSheet(workbook, newProductTypeFormNameFor(namespace));
+    newProductTypeFormModule(workbook, namespace).delete();
     deleteSheet(workbook, stockUpdateFormNameFor(namespace));
     if("" === namespace){
         const triggers = ScriptApp.getProjectTriggers();

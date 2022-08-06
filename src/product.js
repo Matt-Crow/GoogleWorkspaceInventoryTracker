@@ -241,7 +241,7 @@ class ProductTypeService {
      */
     handleNewProduct(product){
         if(this.repository.hasProductTypeWithName(product.name)){
-            console.error(`Duplicate product name received from new product form: ${product.name}`);
+            this.repository.updateProductType(product);
         } else {
             this.repository.addProductType(product);
         }
