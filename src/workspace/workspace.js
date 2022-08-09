@@ -66,7 +66,7 @@ class Component {
 
     _doSetup(){
         const formOrMaybeNot = this.create(this.namespace); // NOT this.name
-        if(formOrMaybeNot.setDestination){
+        if(formOrMaybeNot && formOrMaybeNot.setDestination){
             this._doSetupForm(formOrMaybeNot);
         }
     }

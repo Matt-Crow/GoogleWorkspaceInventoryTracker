@@ -92,36 +92,6 @@ class GoogleSheetsProductTypeRepository {
         //                        translate from 0-idx to 1-idx, +1 for header
         this.sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
     }
-
-    deleteProductTypeByName(name){
-        name = normalizeProductTypeName(name);
-        if(!this.hasProductTypeWithName(name)){
-            throw new Error(`No ProductType exists with name "${name}"`);
-        }
-
-        let data = this.sheet.getDataRange().getValues();
-        data.shift();
-
-        const rowNum = data.findIndex(row => row[0] === name);
-
-        if(rowNum === -1){
-            throw new Error(`something went wrong in GoogleSheetsProductTypeRepository::deleteProductTypeByName("${name}")`);
-        }
-
-        this.sheet.deleteRow(rowNum + 2); // rowNum is 0-idx, deleteRow is 1-idx, +1 for header
-    }
-
-    deleteAll(){
-        const lastRow = this.sheet.getLastRow();
-        this.sheet.deleteRows(
-            2, // skip header
-            lastRow - 1 // has (lastRow) rows, so delete all but the first
-        );
-    }
-
-    save(){
-        
-    }
 }
 
 

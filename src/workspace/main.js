@@ -46,6 +46,7 @@ function regenerateStockUpdateForm(){
  */
 function test(){
 	testProductTypeModule();
+	testUserModule();
 	testWorkspaceModule();
 	SpreadsheetApp.getUi().alert("All tests passed successfully!");
 }

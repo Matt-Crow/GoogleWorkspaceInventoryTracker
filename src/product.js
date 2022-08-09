@@ -2,11 +2,11 @@
  * This module is responsible for services related to ProductTypes
  * 
  * Data class: ProductType
- * #----------------------#--------#
- * |                 name | string |
- * |             quantity | int    |
- * |              minimum | int    |
- * #----------------------#--------#
+ * #----------#--------#
+ * |     name | string |
+ * | quantity | int    |
+ * |  minimum | int    |
+ * #----------#--------#
  */
 
 
@@ -105,25 +105,6 @@ class AbstractProductTypeRepository {
     updateProductType(productType){
         throw new Error("updateProductType is not implemented");
     }
-
-    /**
-     * Removed the ProductType with the given name from the repository.
-     * Subclasses are responsible for how to handle deleting a name for which
-     * there exists no ProductType.
-     * 
-     * @param {string} name 
-     */
-    deleteProductTypeByName(name){
-        throw new Error("deleteProductTypeByName is not implemented");
-    }
-
-    deleteAll(){
-        throw new Error("deleteAll is not implemented");
-    }
-
-    save(){
-        throw new Error("save is not implemented");
-    }
 }
 
 /**
@@ -178,23 +159,7 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
         if(!this.hasProductTypeWithName(name)){
             throw new Error(`Cannot update product type with name "${name}", as no product with that name exists`);
         }
-        this.deleteProductTypeByName(name);
-        this.addProductType(productType);
-    }
-
-    deleteProductTypeByName(name){
-        if(!this.hasProductTypeWithName(name)){
-            throw new Error(`Cannot delete product type with name "${name}", as no product with that name exists`);
-        }
-        this.products.delete(normalizeProductTypeName(name));
-    }
-
-    deleteAll(){
-        this.products.clear();
-    }
-
-    save(){
-
+        this.products.set(name, productType);
     }
 }
 
@@ -249,7 +214,6 @@ class ProductTypeService {
         for(const changedProduct of nameToProductType.values()){
             this.repository.updateProductType(changedProduct);
         }
-        this.repository.save();
     }
 }
 
@@ -317,12 +281,10 @@ function testInMemoryProductTypeRepository(){
 function testProductTypeService(){
     const productTypeComparator = (a, b) => a.dataEquals(b);
     const exists = new ProductType("foo");
-    const notYetAdded = new ProductType("bar");
     const repo = new InMemoryProductTypeRepository([exists]);
     const sut = new ProductTypeService(repo);
     const expected = [
-        exists.copy(),
-        notYetAdded
+        exists.copy()
     ];
     expected[0].quantity += 1;
 
@@ -331,6 +293,5 @@ function testProductTypeService(){
 
     assert(expected.length === actual.length);
     assertContains(expected[0], actual, productTypeComparator);
-    assertContains(expected[1], actual, productTypeComparator);
     assertDoesNotContain(exists, actual);
 }
