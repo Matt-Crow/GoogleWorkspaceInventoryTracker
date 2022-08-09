@@ -20,7 +20,7 @@ const FORM_HANDLER_NAME = onFormSubmit.name;
 
 /*
 this does not automatically start handling forms, and is explicitly registered
-in setupFormHandler
+in _setupFormHandler
 */
 function onFormSubmit(e){
     console.log("Received form submission: \n" + JSON.stringify(e));
@@ -31,7 +31,7 @@ function onFormSubmit(e){
     if("Product name" in e.namedValues){
         newProductTypeFormModule().receiveForm(e);
     } else {
-        onStockUpdateFormSubmit(e);
+        stockUpdateFormModule().receiveForm(e);
     }    
 }
 
@@ -119,24 +119,11 @@ class Component {
 function setupWorkspace(workbook, namespace=""){
     inventorySheetModule(workbook, namespace).setup();
     newProductTypeFormModule(workbook, namespace).setup();
-    setupStockUpdateFormFor(workbook, namespace);
-    setupFormHandler(workbook);
+    stockUpdateFormModule(workbook, namespace).setup();
+    _setupFormHandler(workbook);
 }
 
-/*
-Since this is needed by regenerateStockUpdateFormFor, moved to this function 
- */
-function setupStockUpdateFormFor(workbook, namespace=""){
-    const stockUpdateFormHelper = new Component(
-        workbook,
-        namespace,
-        stockUpdateFormNameFor,
-        createNewStockUpdateForm
-    );
-    stockUpdateFormHelper.setup();
-}
-
-function setupFormHandler(workbook){
+function _setupFormHandler(workbook){
     const triggers = ScriptApp.getProjectTriggers();
     const formSubmitTrigger = triggers.find(t => t.getHandlerFunction() === FORM_HANDLER_NAME);
     if(!formSubmitTrigger){
@@ -150,7 +137,7 @@ function setupFormHandler(workbook){
 function deleteWorkspace(workbook, namespace=""){
     inventorySheetModule(workbook, namespace).delete();
     newProductTypeFormModule(workbook, namespace).delete();
-    deleteSheet(workbook, stockUpdateFormNameFor(namespace));
+    stockUpdateFormModule(workbook, namespace).delete();
     if("" === namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
