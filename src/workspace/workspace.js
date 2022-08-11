@@ -110,6 +110,18 @@ class Component {
     }
 }
 
+function allModulesFor(workbook=null, namespace=""){
+    if(workbook === null){
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
+    return [
+        inventorySheetModule(workbook, namespace),
+        userSheetModule(workbook, namespace),
+        newProductTypeFormModule(workbook, namespace),
+        stockUpdateFormModule(workbook, namespace)
+    ];
+}
+
 
 /**
  * Mutates the given workbook into a suitable environment for the application.
@@ -117,9 +129,7 @@ class Component {
  * @param {string|undefined} namespace - can specify for testing
  */
 function setupWorkspace(workbook, namespace=""){
-    inventorySheetModule(workbook, namespace).setup();
-    newProductTypeFormModule(workbook, namespace).setup();
-    stockUpdateFormModule(workbook, namespace).setup();
+    allModulesFor(workbook, namespace).forEach(m=>m.setup());
     _setupFormHandler(workbook);
 }
 
@@ -135,9 +145,7 @@ function _setupFormHandler(workbook){
 }
 
 function deleteWorkspace(workbook, namespace=""){
-    inventorySheetModule(workbook, namespace).delete();
-    newProductTypeFormModule(workbook, namespace).delete();
-    stockUpdateFormModule(workbook, namespace).delete();
+    allModulesFor(workbook, namespace).forEach(m=>m.delete());
     if("" === namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
