@@ -85,6 +85,14 @@ class UserService {
     getLogFormEmails(){
         return this.users.getAllUsers().filter(u=>u.wantsLog).map(u=>u.email);
     }
+
+    handleUserForm(user){
+        if(this.users.hasUserWithEmail(user.email)){
+            this.users.updateUser(user);
+        } else {
+            this.users.addUser(user);
+        }
+    }
 }
 
 

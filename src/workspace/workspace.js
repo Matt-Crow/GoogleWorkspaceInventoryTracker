@@ -30,6 +30,8 @@ function onFormSubmit(e){
     */
     if("Product name" in e.namedValues){
         newProductTypeFormModule().receiveForm(e);
+    } else if("Email" in e.namedValues){
+        userFormModule().receiveForm(e);
     } else {
         stockUpdateFormModule().receiveForm(e);
     }    
@@ -117,6 +119,7 @@ function allModulesFor(workbook=null, namespace=""){
     return [
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
+        userFormModule(workbook, namespace),
         newProductTypeFormModule(workbook, namespace),
         stockUpdateFormModule(workbook, namespace)
     ];
