@@ -12,6 +12,7 @@ function onOpen(){
 		.addItem("Set up", "setup")
 		.addItem("Reset workspace", "resetWorkspace")
 		.addItem("Regenerate stock update form", "regenerateStockUpdateForm")
+		.addItem("Send stock update form", "sendStockUpdateForm")
 		.addItem("Test", "test")
 		.addToUi();
 }
@@ -39,6 +40,13 @@ function resetWorkspace(){
  */
 function regenerateStockUpdateForm(){
 	regenerateStockUpdateFormFor(SpreadsheetApp.getActiveSpreadsheet());
+}
+
+/**
+ * this might be temporary
+ */
+function sendStockUpdateForm(){
+	createEmailService().sendStockUpdateForm();
 }
 
 /**

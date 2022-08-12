@@ -117,6 +117,7 @@ function allModulesFor(workbook=null, namespace=""){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
     return [
+        emailModule(workbook, namespace),
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
@@ -214,6 +215,7 @@ Unit tests
 
 function testWorkspaceModule(){
     testNameFor();
+    testEmailModule();
     testGoogleSheetsProductTypeRepository();  
 }
 

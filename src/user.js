@@ -80,9 +80,10 @@ class UserService {
     }
 
     /**
-     * @returns {string[]} the email addresses of users who want the log form
+     * @returns {string[]} the email addresses of users who want the stock 
+     *  update form
      */
-    getLogFormEmails(){
+    getStockUpdateFormEmails(){
         return this.users.getAllUsers().filter(u=>u.wantsLog).map(u=>u.email);
     }
 
@@ -107,7 +108,7 @@ function testUserModule(){
     var repo = new InMemoryUserRepository(users);
     var sut = new UserService(repo);
 
-    var actual = sut.getLogFormEmails();
+    var actual = sut.getStockUpdateFormEmails();
 
     assertContains(wantsLog, actual);
     assertDoesNotContain(doesNotWantLog, actual);
