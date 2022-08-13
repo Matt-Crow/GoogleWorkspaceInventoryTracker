@@ -42,7 +42,7 @@ function _populateStockUpdateForm(form, namespace){
         .build();
     
     const service = createProductService(namespace);
-    const productNames = service.getAllProductTypes().map(pt => pt.name);
+    const productNames = service.getAllEntities().map(pt => pt.name);
 
     productNames.forEach(productName => {
         form.addTextItem()

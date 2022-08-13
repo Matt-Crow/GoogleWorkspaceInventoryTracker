@@ -135,7 +135,7 @@ function testEmailModule(){
     ];
     const repo = new InMemoryUserRepository(users);
     const userService = new UserService(repo);
-    const settings = {};
+    let settings = {};
     const emailSettingsRepository = new EmailSettingsRepository(
         ()=>settings,
         (newSettings)=>settings = newSettings

@@ -59,6 +59,8 @@ class GoogleSheetsUserRepository {
         /*
         formats blank cells in range as checkboxes, which we don't want applied
         to rows without users
+
+        TODO use "text must be yes or no" instead
         */
         const validation = SpreadsheetApp.newDataValidation()
             .requireCheckbox()
