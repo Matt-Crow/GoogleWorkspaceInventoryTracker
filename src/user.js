@@ -44,30 +44,30 @@ class InMemoryUserRepository {
         users.forEach(u=>this.users.set(u.email, u));
     }
 
-    addUser(user){
-        if(this.hasUserWithEmail(user.email)){
+    addEntity(user){
+        if(this.hasEntityWithKey(user.email)){
             throw new Error(`User already exists with email = "${user.email}"`);
         }
         this.users.set(user.email, user.copy());
     }
 
-    hasUserWithEmail(email){
+    hasEntityWithKey(email){
         return this.users.has(email);
     }
 
-    getUserByEmail(email){
-        if(!this.hasUserWithEmail(email)){
+    getEntityByKey(email){
+        if(!this.hasEntityWithKey(email)){
             throw new Error(`No user has email = "${email}"`);
         }
         return this.users.get(email).copy();
     }
 
-    getAllUsers(){
+    getAllEntities(){
         return Array.from(this.users.values()).map(u=>u.copy());
     }
 
-    updateUser(user){
-        if(!this.hasUserWithEmail(user.email)){
+    update(user){
+        if(!this.hasEntityWithKey(user.email)){
             throw new Error(`No user has email = "${user.email}"`);
         }
         this.users.set(user.email, user);
@@ -84,14 +84,14 @@ class UserService {
      *  update form
      */
     getStockUpdateFormEmails(){
-        return this.users.getAllUsers().filter(u=>u.wantsLog).map(u=>u.email);
+        return this.users.getAllEntities().filter(u=>u.wantsLog).map(u=>u.email);
     }
 
     handleUserForm(user){
-        if(this.users.hasUserWithEmail(user.email)){
-            this.users.updateUser(user);
+        if(this.users.hasEntityWithKey(user.email)){
+            this.users.update(user);
         } else {
-            this.users.addUser(user);
+            this.users.addEntity(user);
         }
     }
 }
