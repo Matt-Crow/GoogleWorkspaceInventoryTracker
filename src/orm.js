@@ -1,5 +1,21 @@
 
 
+// maybe try to abstractify this into both inmemory and gsrepo
+class Repository {
+    constructor(){
+
+    }
+
+    addEntity(entity){
+
+    }
+
+    hasEntityWithKey(key){
+
+    }
+}
+
+
 
 /**
  * stores entities in a Google sheet

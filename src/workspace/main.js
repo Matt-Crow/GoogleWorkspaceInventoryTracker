@@ -13,7 +13,8 @@ function onOpen(){
 		.addItem("Reset workspace", "resetWorkspace")
 		.addItem("Regenerate stock update form", "regenerateStockUpdateForm")
 		.addItem("Send stock update form", "sendStockUpdateForm")
-		.addItem("Test", "test")
+		.addItem("Run unit tests (fast)", "unitTests")
+		.addItem("Run integration tests (slow)", "integrationTests")
 		.addToUi();
 }
 
@@ -49,12 +50,16 @@ function sendStockUpdateForm(){
 	createEmailService().sendStockUpdateForm();
 }
 
-/**
- * runs all tests
- */
-function test(){
+
+function unitTests(){
 	testProductTypeModule();
+	testSettings();
 	testUserModule();
+	SpreadsheetApp.getUi().alert("All tests passed successfully!");
+}
+
+
+function integrationTests(){
 	testWorkspaceModule();
 	SpreadsheetApp.getUi().alert("All tests passed successfully!");
 }
