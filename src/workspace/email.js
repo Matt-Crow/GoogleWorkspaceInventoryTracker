@@ -12,69 +12,14 @@ function createEmailService(workbook=null, namespace=""){
     }
     
     const users = createUserService(workbook, namespace);
-    const emailSettingsRepository = new EmailSettingsRepository(
-        ()=>_readEmailSheet(workbook, namespace),
-        (newSettings)=>_updateEmailSheet(workbook, namespace, newSettings)
-    );
     const emailSender = (email)=>MailApp.sendEmail({
         to: email.to.join(","),
         subject: email.subject,
         htmlBody: email.bodyHtml
     });
+    const settings = createSettings(workbook, namespace);
 
-    return new EmailService(users, emailSettingsRepository, emailSender);
-}
-
-
-function _readEmailSheet(workbook, namespace){
-    const sheet = workbook.getSheetByName(_emailNameFor(namespace));
-    const data = sheet.getRange("A2:B2").getValues();
-    const settings = {
-        stockUpdateFormInterval: data[0][0] ?? 7,
-        stockUpdateFormLastSent: data[0][1] ?? null
-    };
-    return settings;
-}
-
-function _updateEmailSheet(workbook, namespace, newSettings){
-    const sheet = workbook.getSheetByName(_emailNameFor(namespace));
-    const range = sheet.getRange("A2:B2");
-    range.setValues([
-        [newSettings.stockUpdateFormInterval, newSettings.stockUpdateFormLastSent]
-    ]);
-}
-
-
-function emailModule(workbook=null, namespace=""){
-    if(workbook===null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    return new Component(
-        workbook,
-        namespace,
-        _emailNameFor,
-        (ns)=>_createEmailSheet(workbook, ns)
-    );
-}
-
-function _emailNameFor(namespace=""){
-    return nameFor("email settings", namespace);
-}
-
-function _createEmailSheet(workbook, namespace){
-    const emailSheet = workbook.insertSheet(_emailNameFor(namespace));
-    emailSheet.setFrozenRows(1);
-
-    const headers = ["stock update form interval", "stock update form last sent"];
-    emailSheet.appendRow(headers);
-}
-
-
-class EmailSettingsRepository{
-    constructor(load, save){
-        this.load = load;
-        this.save = save;
-    }
+    return new EmailService(users, emailSender, settings);
 }
 
 
@@ -93,20 +38,18 @@ class Email {
 
 class EmailService {
     /**
-     * @param {UserService} userService - used to get lists of users who want
+     * @param {UserService} userService used to get lists of users who want
      *  each email type.
-     * @param {EmailSettingsRepository} emailSettingsRepository - saves & loads
-     *  email settings
-     * @param {(email)=>any} sendEmail - sends emails
+     * @param {(email)=>any} sendEmail sends emails
+     * @param {Settings} settings contains email settings
      */
-    constructor(userService, emailSettingsRepository, sendEmail){
+    constructor(userService, sendEmail, settings){
         this._users = userService;
-        this._emailSettings = emailSettingsRepository;
         this._sendEmail = sendEmail;
+        this._settings = settings;
     }
 
     sendStockUpdateForm(){
-        const settings = this._emailSettings.load();
         const to = this._users.getStockUpdateFormEmails();
 
         if(to.length === 0){
@@ -120,8 +63,7 @@ class EmailService {
         );
 
         this._sendEmail(email);
-        settings.stockUpdateFormLastSent = new Date();
-        this._emailSettings.save(settings);
+        this._settings.setStockUpdateLastSent(new Date());
     }
 }
 
@@ -136,10 +78,6 @@ function testEmailModule(){
     const repo = new InMemoryUserRepository(users);
     const userService = new UserService(repo);
     let settings = {};
-    const emailSettingsRepository = new EmailSettingsRepository(
-        ()=>settings,
-        (newSettings)=>settings = newSettings
-    );
     const emailRecorder = (email)=>{
         email.to.forEach(addr=>{
             if(!sentEmails.has(addr)){
@@ -148,10 +86,21 @@ function testEmailModule(){
             sentEmails.get(addr).push(email);
         });
     };
+    const settingService = new Settings(
+        k => settings[k],
+        (k, v)=> {
+            if(!settings[k]){
+                settings[k] = new Setting(k, v);
+            } else {
+                settings[k].value = v;
+            }
+        },
+        setting => settings[setting.name] = setting
+    );
     const emailService = new EmailService(
-        userService, 
-        emailSettingsRepository, 
-        emailRecorder
+        userService,
+        emailRecorder,
+        settingService
     );
     emailService.sendStockUpdateForm();
 

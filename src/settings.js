@@ -18,11 +18,10 @@ class Settings {
         this._get = getter;
         this._set = setter;
         this._define = defineSetting;
-        this._populateDefaults();
     }
 
 
-    _populateDefaults(){
+    populateDefaults(){
         DEFAULT_SETTINGS.forEach(setting=>this._define(setting));
     }
 
@@ -80,6 +79,7 @@ function testSettings(){
         (key, value)=>settings.get(key).value = value,
         (setting)=>settings.set(setting.name, setting)
     );
+    sut.populateDefaults();
 
     mustBeDefined(sut.get("stock update form interval"));
 }

@@ -117,9 +117,9 @@ function allModulesFor(workbook=null, namespace=""){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
     return [
-        emailModule(workbook, namespace),
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
+        settingSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
         newProductTypeFormModule(workbook, namespace),
         stockUpdateFormModule(workbook, namespace)
