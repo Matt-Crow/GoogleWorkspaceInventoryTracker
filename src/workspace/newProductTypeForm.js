@@ -20,7 +20,11 @@ function newProductTypeFormModule(workbook=null, namespace=""){
         workbook,
         namespace,
         _newProductTypeFormNameFor,
-        _createNewProductTypeForm,
+        (ns)=>{
+            const form = _createNewProductTypeForm(ns);
+            createSettings(workbook, namespace).setNewProductTypeForm(form);
+            return form;
+        },
         _onNewProductTypeFormSubmit
     );
 }
@@ -86,4 +90,5 @@ function _onNewProductTypeFormSubmit(event){
     console.log("New product: " + JSON.stringify(product));
 
     createProductService().handleNewProduct(product);
+    createSettings().setStockUpdateFormStale(true);
 }

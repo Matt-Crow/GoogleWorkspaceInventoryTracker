@@ -13,7 +13,11 @@ function userFormModule(workbook=null, namespace=""){
         workbook,
         namespace,
         _userFormNameFor,
-        _createUserForm,
+        (ns)=>{
+            const form = _createUserForm(ns);
+            createSettings(workbook, namespace).setUserForm(form);
+            return form;
+        },
         _onUserFormSubmit
     );
 }

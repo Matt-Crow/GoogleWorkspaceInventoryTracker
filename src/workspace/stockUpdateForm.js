@@ -17,7 +17,11 @@ function stockUpdateFormModule(workbook=null, namespace=""){
         workbook,
         namespace,
         _stockUpdateFormNameFor,
-        _createNewStockUpdateForm,
+        (ns)=>{
+            const form = _createNewStockUpdateForm(ns);
+            createSettings(workbook, namespace).setStockUpdateForm(form);
+            return form;
+        },
         _onStockUpdateFormSubmit
     );
 }
@@ -83,8 +87,7 @@ function _onStockUpdateFormSubmit(e){
     createProductService().handleLogForm(products);
 }
 
-// this will need to be called before sending the form if a new product type has been submitted
-// probably use an "isStale" flag
+
 function regenerateStockUpdateFormFor(workbook, namespace=""){
     const name = _stockUpdateFormNameFor(namespace);
     const sheet = workbook.getSheetByName(name);
@@ -97,4 +100,5 @@ function regenerateStockUpdateFormFor(workbook, namespace=""){
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
         _populateStockUpdateForm(oldForm, namespace);
     }
+    createSettings(workbook, namespace).setStockUpdateFormStale(false);
 }

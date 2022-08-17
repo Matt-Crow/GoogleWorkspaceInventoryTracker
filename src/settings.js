@@ -33,6 +33,10 @@ class Settings {
         this._set(key, value);
     }
 
+    defineSetting(key, value, description=""){
+        this._define(new Setting(key, value, description));
+    }
+
     getStockUpdateFormInterval(){
         return this.get("stock update form interval");
     }
@@ -52,6 +56,26 @@ class Settings {
     isStockUpdateFormStale(){
         return this.get("stock update form is stale") === "yes";
     }
+
+    setUserForm(form){
+        this.set("User form URL", form.getPublishedUrl());
+    }
+
+    setStockUpdateForm(form){
+        this.set("Stock update form URL", form.getPublishedUrl());
+    }
+
+    getStockUpdateFormUrl(){
+        return this.get("Stock update form URL");
+    }
+
+    setNewProductTypeForm(form){
+        this.set("New product type form URL", form.getPublishedUrl());
+    }
+
+    getNewProductTypeFormUrl(){
+        return this.get("New product type form URL");
+    }
 }
 
 
@@ -67,7 +91,10 @@ class Setting {
 const DEFAULT_SETTINGS = [
     new Setting("stock update form interval", 7, "The number of days between sendings of the stock update form"),
     new Setting("stock update form last sent", null, "When the stock update form was last sent"),
-    new Setting("stock update form is stale", true, "'yes' when the system will regenerate the stock update form")
+    new Setting("stock update form is stale", "no", "'yes' when the system will regenerate the stock update form"),
+    new Setting("User form URL", "", "Use this form to sign up for notifications or change your preferences"),
+    new Setting("Stock update form URL", "", "Use this form to update the items in stock"),
+    new Setting("New product type form URL", "", "Use this form to record a new product type in the stock")
 ];
 
 

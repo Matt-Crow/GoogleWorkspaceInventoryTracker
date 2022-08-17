@@ -53,12 +53,15 @@ You can read more about the problem domain in the [Software Requirement Specific
 
 - *How do I start tracking a new product?* 
     You can either manually enter data in the `inventory` sheet (only the name is required), 
-    or you can use the `new product` form by clicking the `New Product Type` sheet, then select `Tools` => `Manage form` => `Go to live form`
-    Note that you'll have to regenerate the stock update form for the new product to show there
+    or you can use the `new product` form by clicking the `New product type form URL` link on the `settings` sheet.
 - *How do I update how many of a product are in stock?*
     You can either manually enter data in the `inventory` sheet
-    or you can use the `stock update` form by clicking the `Stock Update` sheet, then select `Tools` => `Manage form` => `Go to live form`
+    or you can use the `stock update` form by clicking the `Stock update form URL` link on the `settings` sheet.
 
+## Known issues
+
+- *I just added an item to the stock, but it isn't showing up in the stock update form.*
+    The program only changes the stock update form whenever it sends it, so the new item will show up the next time it sends.
 
 ## Helpful Links
 

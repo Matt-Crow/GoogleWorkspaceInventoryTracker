@@ -58,11 +58,7 @@ function makeGoogleSheetsProductTypeRepository(sheet){
 
 
 
-function testGoogleSheetsProductTypeRepository(){
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    deleteWorkspace(workbook, "test");
-    setupWorkspace(workbook, "test");
-
+function testGoogleSheetsProductTypeRepository(workbook){
     const sheet = workbook.getSheetByName(_inventorySheetNameFor("test"));
     const sut = makeGoogleSheetsProductTypeRepository(sheet)
     const expected = new ProductType("product");
@@ -77,10 +73,4 @@ function testGoogleSheetsProductTypeRepository(){
     const all = sut.getAllEntities();
     assert(1 === all.length, `length should be 1, not ${all.length}`);
     assert(expected.dataEquals(all[0]));
-
-    /*
-    only remove test sheets if tests are successful, as this allows us to
-    diagnose errors if one of these tests fails
-    */
-    deleteWorkspace(workbook, "test");
 }

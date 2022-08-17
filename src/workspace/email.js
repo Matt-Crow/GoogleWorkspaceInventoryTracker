@@ -18,8 +18,8 @@ function createEmailService(workbook=null, namespace=""){
         htmlBody: email.bodyHtml
     });
     const settings = createSettings(workbook, namespace);
-
-    return new EmailService(users, emailSender, settings);
+    const regenForm = ()=>regenerateStockUpdateFormFor(workbook, namespace);
+    return new EmailService(users, emailSender, settings, regenForm);
 }
 
 
@@ -42,14 +42,21 @@ class EmailService {
      *  each email type.
      * @param {(email)=>any} sendEmail sends emails
      * @param {Settings} settings contains email settings
+     * @param {()=>null} regenerateStockUpdateForm regenerates the stock update
+     *  form if it is stale.
      */
-    constructor(userService, sendEmail, settings){
+    constructor(userService, sendEmail, settings, regenerateStockUpdateForm){
         this._users = userService;
         this._sendEmail = sendEmail;
         this._settings = settings;
+        this._regenerateStockUpdateForm = regenerateStockUpdateForm;
     }
 
     sendStockUpdateForm(){
+        if(this._settings.isStockUpdateFormStale()){
+            this._regenerateStockUpdateForm();
+        }
+
         const to = this._users.getStockUpdateFormEmails();
 
         if(to.length === 0){
@@ -97,10 +104,12 @@ function testEmailModule(){
         },
         setting => settings[setting.name] = setting
     );
+    settingService.populateDefaults();
     const emailService = new EmailService(
         userService,
         emailRecorder,
-        settingService
+        settingService,
+        ()=>settingService.setStockUpdateFormStale(false)
     );
     emailService.sendStockUpdateForm();
 

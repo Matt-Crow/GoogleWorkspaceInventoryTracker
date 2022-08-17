@@ -101,6 +101,7 @@ class Component {
             return form.getId() === formId; 
         });
         createdSheet.setName(this.name);
+        createdSheet.hideSheet();
     }
 
     delete(){
@@ -117,9 +118,9 @@ function allModulesFor(workbook=null, namespace=""){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
     return [
+        settingSheetModule(workbook, namespace), // must be first
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
-        settingSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
         newProductTypeFormModule(workbook, namespace),
         stockUpdateFormModule(workbook, namespace)
@@ -214,9 +215,19 @@ Unit tests
 */
 
 function testWorkspaceModule(){
+    const workbook = SpreadsheetApp.getActiveSpreadsheet();
+    deleteWorkspace(workbook, "test");
+    setupWorkspace(workbook, "test");
+
     testNameFor();
     testEmailModule();
-    testGoogleSheetsProductTypeRepository();  
+    testGoogleSheetsProductTypeRepository(workbook);
+
+    /*
+    only remove test sheets if tests are successful, as this allows us to
+    diagnose errors if one of these tests fails
+    */
+    deleteWorkspace(workbook, "test");
 }
 
 function testNameFor(){
