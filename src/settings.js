@@ -61,6 +61,10 @@ class Settings {
         this.set("User form URL", form.getPublishedUrl());
     }
 
+    getUserFormUrl(){
+        return this.get("User form URL");
+    }
+
     setStockUpdateForm(form){
         this.set("Stock update form URL", form.getPublishedUrl());
     }
@@ -75,6 +79,14 @@ class Settings {
 
     getNewProductTypeFormUrl(){
         return this.get("New product type form URL");
+    }
+
+    setWorkbook(workbook){
+        this.set("Workbook URL", workbook.getUrl());
+    }
+
+    getWorkbookUrl(){
+        return this.get("Workbook URL");
     }
 }
 
@@ -94,7 +106,8 @@ const DEFAULT_SETTINGS = [
     new Setting("stock update form is stale", "no", "'yes' when the system will regenerate the stock update form"),
     new Setting("User form URL", "", "Use this form to sign up for notifications or change your preferences"),
     new Setting("Stock update form URL", "", "Use this form to update the items in stock"),
-    new Setting("New product type form URL", "", "Use this form to record a new product type in the stock")
+    new Setting("New product type form URL", "", "Use this form to record a new product type in the stock"),
+    new Setting("Workbook URL", "", "The URL of this workbook")
 ];
 
 

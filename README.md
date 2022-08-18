@@ -57,6 +57,9 @@ You can read more about the problem domain in the [Software Requirement Specific
 - *How do I update how many of a product are in stock?*
     You can either manually enter data in the `inventory` sheet
     or you can use the `stock update` form by clicking the `Stock update form URL` link on the `settings` sheet.
+- *How do I change which emails I receive from the system?*
+    You can either edit your preferences in the `users` sheet, 
+    or you can use the `user` form by clicking the `User form URL` link on the `settings` sheet.
 
 ## Known issues
 

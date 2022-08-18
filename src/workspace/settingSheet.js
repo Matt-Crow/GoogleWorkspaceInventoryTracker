@@ -26,6 +26,7 @@ function _setupSettingSheet(workbook, ns){
 
     const service = createSettings(workbook, ns);
     service.populateDefaults();
+    service.setWorkbook(workbook);
 }
 
 function createSettings(workbook=null, namespace=""){
