@@ -73,7 +73,7 @@ function _makeGoogleSheetsUserRepository(sheet){
         ],
         (row)=>new User(
             row[0],
-            row[1] === "yes",
+            row[1] === "yes", // empty cells count as "no"
             row[2] === "yes"
         )
     );

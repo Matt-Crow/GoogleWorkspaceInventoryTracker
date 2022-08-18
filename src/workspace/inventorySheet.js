@@ -52,7 +52,11 @@ function makeGoogleSheetsProductTypeRepository(sheet){
         sheet,
         (productType)=>productType.name,
         (productType)=>[productType.name, productType.quantity, productType.minimum],
-        (row)=>new ProductType(row[0], row[1], row[2])
+        (row)=>new ProductType(
+            row[0], 
+            (row[1] === "") ? undefined : row[1], // catch empty cells
+            (row[2] === "") ? undefined : row[2]
+        )
     );
 }
 
