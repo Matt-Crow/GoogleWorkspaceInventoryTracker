@@ -21,6 +21,22 @@ function _setupUserSheet(workbook, namespace){
 
     const headers = ["email", "wants log", "wants report"];
     userSheet.appendRow(headers);
+
+    const mustBeEmail = SpreadsheetApp.newDataValidation()
+        .requireTextIsEmail()
+        .setAllowInvalid(false)
+        .setHelpText("must be a valid email address")
+        .build();
+    const emailCol = userSheet.getRange("A2:A");
+    emailCol.setDataValidation(mustBeEmail);
+
+    const mustBeYesOrNo = SpreadsheetApp.newDataValidation()
+        .requireValueInList(["yes", "no"])
+        .setAllowInvalid(false)
+        .setHelpText("must be either 'yes' or 'no', without quote marks")
+        .build();
+    const boolCols = userSheet.getRange("B2:C");
+    boolCols.setDataValidation(mustBeYesOrNo);
 }
 
 
@@ -50,7 +66,11 @@ function _makeGoogleSheetsUserRepository(sheet){
     return new GoogleSheetsRepository(
         sheet,
         (user)=>user.email,
-        (user)=>[user.email, user.wantsLog, user.wantsReport],
+        (user)=>[
+            user.email, 
+            (user.wantsLog) ? "yes" : "no", 
+            (user.wantsReport) ? "yes" : "no"
+        ],
         (row)=>new User(
             row[0],
             row[1] === "yes",

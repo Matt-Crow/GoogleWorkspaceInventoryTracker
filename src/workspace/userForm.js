@@ -62,6 +62,10 @@ function _onUserFormSubmit(e){
     const row = e.values;
     row.shift(); // get rid of timestamp
 
+    /*
+    this still overrides previous user if row[1] or row[2] is empty, setting it
+    to false. Asking client expected behavior.
+    */
     const email = row[0];
     const wantsLog = row[1] === "Yes";
     const wantsReport = row[2] === "Yes";
