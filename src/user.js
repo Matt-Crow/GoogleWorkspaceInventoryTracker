@@ -101,14 +101,14 @@ class UserService {
 function testUserModule(){
     const wantsLog = "baz.qux@gmail.com";
     const doesNotWantLog = "foo.bar@gmail.com";
-    var users = [
+    const users = [
         new User(doesNotWantLog),
         new User(wantsLog, true, true)
     ];
-    var repo = new InMemoryUserRepository(users);
-    var sut = new UserService(repo);
+    const repo = new InMemoryUserRepository(users);
+    const sut = new UserService(repo);
 
-    var actual = sut.getStockUpdateFormEmails();
+    const actual = sut.getStockUpdateFormEmails();
 
     assertContains(wantsLog, actual);
     assertDoesNotContain(doesNotWantLog, actual);

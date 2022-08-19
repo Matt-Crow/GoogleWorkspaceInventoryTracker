@@ -12,7 +12,8 @@ function onOpen(){
 		.addItem("Set up", "setup")
 		.addItem("Reset workspace", "resetWorkspace")
 		.addItem("Regenerate stock update form", "regenerateStockUpdateForm")
-		.addItem("Send stock update form", "sendStockUpdateForm")
+		.addItem("Send stock update form", sendStockUpdateForm.name)
+		.addItem("Prime stock update form", primeStockUpdateForm.name)
 		.addItem("Run unit tests (fast)", "unitTests")
 		.addItem("Run integration tests (slow)", "integrationTests")
 		.addToUi();
@@ -42,14 +43,6 @@ function resetWorkspace(){
 function regenerateStockUpdateForm(){
 	regenerateStockUpdateFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
-
-/**
- * this might be temporary
- */
-function sendStockUpdateForm(){
-	createEmailService().sendStockUpdateForm();
-}
-
 
 function unitTests(){
 	testProductTypeModule();

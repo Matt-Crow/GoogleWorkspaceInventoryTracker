@@ -41,14 +41,6 @@ class Settings {
         return this.get("stock update form interval");
     }
 
-    setStockUpdateLastSent(date){
-        this.set("stock update form last sent", date);
-    }
-
-    getStockUpdateLastSent(){
-        return this.get("stock update form last sent");
-    }
-
     setStockUpdateFormStale(isStale){
         this.set("stock update form is stale", (isStale) ? "yes" : "no");
     }
@@ -102,7 +94,6 @@ class Setting {
 
 const DEFAULT_SETTINGS = [
     new Setting("stock update form interval", 7, "The number of days between sendings of the stock update form"),
-    new Setting("stock update form last sent", null, "When the stock update form was last sent"),
     new Setting("stock update form is stale", "no", "'yes' when the system will regenerate the stock update form"),
     new Setting("User form URL", "", "Use this form to sign up for notifications or change your preferences"),
     new Setting("Stock update form URL", "", "Use this form to update the items in stock"),

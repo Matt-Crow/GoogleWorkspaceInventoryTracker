@@ -60,6 +60,11 @@ You can read more about the problem domain in the [Software Requirement Specific
 - *How do I change which emails I receive from the system?*
     You can either edit your preferences in the `users` sheet, 
     or you can use the `user` form by clicking the `User form URL` link on the `settings` sheet.
+- *How do I send out the stock update email?*
+    You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Send stock update form`
+    or you can make it automatically send the email by setting the `stock update form interval` setting to a number, then going to the menu and selecting `G-WIT` => `Prime stock update form`
+- *How do I make the application stop automatically sending emails?*
+    Go to the `settings` sheet, delete the value in the `stock update form interval` cell, then go to the menu and select `G-WIT` => `Prime stock update form`
 
 ## Known issues
 
@@ -70,4 +75,3 @@ You can read more about the problem domain in the [Software Requirement Specific
 
 - [clasp](https://developers.google.com/apps-script/guides/clasp)
 - [Google Script documentation](https://developers.google.com/apps-script/reference)
-- [time-based triggers](https://developers.google.com/apps-script/guides/triggers/installable)
