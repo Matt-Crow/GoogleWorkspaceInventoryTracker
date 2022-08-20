@@ -3,42 +3,43 @@
  * to the inventory.
  */
 
-function newProductTypeFormNameFor(namespace=""){
+
+
+/**
+ * Use this to interface with the "New Product Type" form component of the 
+ * system.
+ * @param {SpreadsheetApp.Spreadsheet|null} workbook 
+ * @param {string|undefined} namespace 
+ * @returns the "New Product Type" form component of the application
+ */
+function newProductTypeFormModule(workbook=null, namespace=""){
+    if(workbook === null){
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
+    return new Component(
+        workbook,
+        namespace,
+        _newProductTypeFormNameFor,
+        (ns)=>{
+            const form = _createNewProductTypeForm(ns);
+            createSettings(workbook, namespace).setNewProductTypeForm(form);
+            return form;
+        },
+        _onNewProductTypeFormSubmit
+    );
+}
+
+
+/*
+Private functions
+*/
+
+
+function _newProductTypeFormNameFor(namespace=""){
     return nameFor("New Product Type", namespace);
 }
 
-function onNewProductTypeFormSubmit(event){
-    console.log(JSON.stringify(event));
-    const row = event.values;
-    row.shift(); // remove first cell (timestamp)
-    
-    const name = row[0];
-    const quantity = parseInt(row[1]);
-    const minimum = parseInt(row[2]);
-    const notificationInterval = parseInt(row[3]);
-
-    const product = new ProductType(
-        name,
-        (isNaN(quantity)) ? undefined : quantity,
-        (isNaN(minimum)) ? undefined : minimum,
-        (isNaN(notificationInterval)) ? undefined : notificationInterval
-    );
-    console.log(JSON.stringify(product));
-
-    const repo = new GoogleSheetsProductTypeRepository(
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nameFor("inventory"))
-    );
-    const service = new ProductTypeService(repo);
-    service.handleNewProduct(product);
-}
-
-/**
- * Creates the form which the stock keeper will use to add new product types to
- * the inventory.
- * @param {string} namespace
- * @return {FormApp.Form} the created form
- */
- function createNewProductTypeForm(namespace){
+function _createNewProductTypeForm(namespace){
     /*
     Google Forms does not support number input fields, but uses text fields with
     number validators instead. There are two important points to consider when
@@ -55,7 +56,7 @@ function onNewProductTypeFormSubmit(event){
         .requireNumberGreaterThan(0)
         .build();
     
-    const form = FormApp.create(newProductTypeFormNameFor(namespace));
+    const form = FormApp.create(_newProductTypeFormNameFor(namespace));
     form.setDescription("Add a new product type to the inventory.");
 
     form.addTextItem()
@@ -69,10 +70,25 @@ function onNewProductTypeFormSubmit(event){
     form.addTextItem()
         .setTitle("How many do you want to keep in stock at all times?")
         .setValidation(mustBeANonNegativeNumber);
-    
-    form.addTextItem()
-        .setTitle("How many days should there be between each time I ask you to check this product's stock?")
-        .setValidation(mustBeAPositiveNumber);
 
     return form;
+}
+
+function _onNewProductTypeFormSubmit(event){
+    const row = event.values;
+    row.shift(); // remove first cell (timestamp)
+    
+    const name = row[0];
+    const quantity = parseInt(row[1]);
+    const minimum = parseInt(row[2]);
+
+    const product = new ProductType(
+        name,
+        (isNaN(quantity)) ? undefined : quantity,
+        (isNaN(minimum)) ? undefined : minimum
+    );
+    console.log("New product: " + JSON.stringify(product));
+
+    createProductService().handleNewProduct(product);
+    createSettings().setStockUpdateFormStale(true);
 }

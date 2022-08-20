@@ -2,18 +2,12 @@
  * This module is responsible for services related to ProductTypes
  * 
  * Data class: ProductType
- * #----------------------#--------#
- * |                 name | string |
- * |             quantity | int    |
- * |              minimum | int    |
- * | notificationInterval | int    |
- * |         lastNotified | Date?  |
- * #----------------------#--------#
+ * #----------#--------#
+ * |     name | string |
+ * | quantity | int    |
+ * |  minimum | int    |
+ * #----------#--------#
  */
-
-
-
-const DEFAULT_NOTIFICATION_INTERVAL = 7; // measured in days
 
 
 
@@ -28,40 +22,27 @@ class ProductType {
      * @param {number} minimum - the system will report when quantity <= minimum
      * @param {number} notificationInterval - how often the stock keeper should
      *  be asked to update the quantity of this product type (measured in days)
-     * @param {Date} lastNotified - the last time quantity was updated 
      */
-    constructor(name, quantity=0, minimum=0, notificationInterval=DEFAULT_NOTIFICATION_INTERVAL, lastNotified=null){
+    constructor(name, quantity=0, minimum=0){
         mustHaveValue(name);
         mustHaveValue(quantity);
         mustBeNonNegative(quantity);
         mustHaveValue(minimum);
         mustBeNonNegative(minimum);
-        mustHaveValue(notificationInterval);
-        mustBePositive(notificationInterval);
 
         this.name = normalizeProductTypeName(name);
         this.quantity = quantity;
         this.minimum = minimum;
-        this.notificationInterval = notificationInterval;
-        this.lastNotified = lastNotified;
     }
 
     dataEquals(other){
         return this.name === other.name &&
             this.quantity === other.quantity &&
-            this.minimum === other.minimum &&
-            this.notificationInterval === other.notificationInterval &&
-            this.lastNotified === other.lastNotified;
+            this.minimum === other.minimum;
     }
 
     copy(){
-        return new ProductType(
-            this.name, 
-            this.quantity, 
-            this.minimum, 
-            this.notificationInterval, 
-            this.lastNotified
-        );
+        return new ProductType(this.name, this.quantity, this.minimum);
     }
 }
 
@@ -81,8 +62,8 @@ class AbstractProductTypeRepository {
      * 
      * @param {ProductType} productType 
      */
-    addProductType(productType){
-        throw new Error("addProductType is not implemented");
+    addEntity(productType){
+        throw new Error("addEntity is not implemented");
     }
 
     /**
@@ -90,8 +71,8 @@ class AbstractProductTypeRepository {
      * @returns {boolean} whether this repository has a ProductType with the
      *  given name 
      */
-    hasProductTypeWithName(name){
-        throw new Error("hasProductTypeWithName is not implemented");
+    hasEntityWithKey(name){
+        throw new Error("hasEntityWithKey is not implemented");
     }
 
     /**
@@ -102,15 +83,15 @@ class AbstractProductTypeRepository {
      * @param {string} name 
      * @returns {ProductType}
      */
-    getProductTypeByName(name){
-        throw new Error("getProductTypeByName is not implemented");
+    getEntityByKey(name){
+        throw new Error("getEntityByKey is not implemented");
     }
 
     /**
      * @returns {ProductType[]}
      */
-    getAllProductTypes(){
-        throw new Error("getAllProductTypes is not implemented");
+    getAllEntities(){
+        throw new Error("getAllEntities is not implemented");
     }
 
     /**
@@ -121,27 +102,8 @@ class AbstractProductTypeRepository {
      * 
      * @param {ProductType} productType 
      */
-    updateProductType(productType){
-        throw new Error("updateProductType is not implemented");
-    }
-
-    /**
-     * Removed the ProductType with the given name from the repository.
-     * Subclasses are responsible for how to handle deleting a name for which
-     * there exists no ProductType.
-     * 
-     * @param {string} name 
-     */
-    deleteProductTypeByName(name){
-        throw new Error("deleteProductTypeByName is not implemented");
-    }
-
-    deleteAll(){
-        throw new Error("deleteAll is not implemented");
-    }
-
-    save(){
-        throw new Error("save is not implemented");
+    update(productType){
+        throw new Error("update is not implemented");
     }
 }
 
@@ -156,8 +118,7 @@ function normalizeProductTypeName(name){
 }
 
 /**
- * This non-persistant ProductType repository can be used for testing or as a
- * cache for GoogleSheetsProductTypeRepository
+ * This non-persistant ProductType repository used for testing
  */
 class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
     constructor(products=[]){
@@ -169,51 +130,35 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
         ));
     }
 
-    addProductType(productType){
+    addEntity(productType){
         const name = normalizeProductTypeName(productType.name);
-        if(this.hasProductTypeWithName(name)){
+        if(this.hasEntityWithKey(name)){
             throw new Error(`Product already exists with name "${name}"`);
         }
         this.products.set(name, productType.copy());
     }
 
-    hasProductTypeWithName(name){
+    hasEntityWithKey(name){
         return this.products.has(normalizeProductTypeName(name));
     }
 
-    getProductTypeByName(name){
-        if(!this.hasProductTypeWithName(name)){
+    getEntityByKey(name){
+        if(!this.hasEntityWithKey(name)){
             throw new Error(`No product type with name "${name}"`);
         }
         return this.products.get(normalizeProductTypeName(name)).copy();
     }
 
-    getAllProductTypes(){
+    getAllEntities(){
         return Array.from(this.products.values()).map(pt => pt.copy());
     }
 
-    updateProductType(productType){
+    update(productType){
         const name = normalizeProductTypeName(productType.name);
-        if(!this.hasProductTypeWithName(name)){
+        if(!this.hasEntityWithKey(name)){
             throw new Error(`Cannot update product type with name "${name}", as no product with that name exists`);
         }
-        this.deleteProductTypeByName(name);
-        this.addProductType(productType);
-    }
-
-    deleteProductTypeByName(name){
-        if(!this.hasProductTypeWithName(name)){
-            throw new Error(`Cannot delete product type with name "${name}", as no product with that name exists`);
-        }
-        this.products.delete(normalizeProductTypeName(name));
-    }
-
-    deleteAll(){
-        this.products.clear();
-    }
-
-    save(){
-
+        this.products.set(name, productType);
     }
 }
 
@@ -232,34 +177,42 @@ class ProductTypeService {
     /**
      * @returns {ProductType[]}
      */
-    getAllProductTypes(){
-        return this.repository.getAllProductTypes();
+    getAllEntities(){
+        return this.repository.getAllEntities();
     }
 
     /**
      * @param {ProductType} product 
      */
     handleNewProduct(product){
-        if(this.repository.hasProductTypeWithName(product.name)){
-            console.error(`Duplicate product name received from new product form: ${product.name}`);
+        if(this.repository.hasEntityWithKey(product.name)){
+            this.repository.update(product);
         } else {
-            this.repository.addProductType(product);
+            this.repository.addEntity(product);
         }
     }
 
     /**
-     * @param {ProductType[]} products 
+     * @param {ProductType[]} changes 
      */
-    handleLogForm(products){
-        products.forEach(product => {
-            const n = normalizeProductTypeName(product.name);
-            if(this.repository.hasProductTypeWithName(n)){
-                this.repository.updateProductType(product);
-            } else {
-                this.repository.addProductType(product);
+    handleLogForm(changes){
+        /*
+        the products created by the log form have no "minimum" field, so need to
+        retrieve that field from the current repository
+        */
+        const oldProducts = this.repository.getAllEntities();
+        const nameToProductType = new Map();
+        oldProducts.forEach(product=>nameToProductType.set(product.name, product));
+        changes.forEach(change=>{
+            if(!nameToProductType.has(change.name)){
+                console.error(`Log form contains new product: ${change.name}. Maybe regenerate the stock update form?`);
             }
+            nameToProductType.get(change.name).quantity = change.quantity;
         });
-        this.repository.save();
+
+        for(const changedProduct of nameToProductType.values()){
+            this.repository.update(changedProduct);
+        }
     }
 }
 
@@ -293,14 +246,6 @@ function testProductType(){
     new ProductType(name, amount, 0);
     assertThrows(()=>new ProductType(name, amount, null));
     assertThrows(()=>new ProductType(name, amount, -minimum));
-
-    // notificationInterval must be defined and positive
-    const notificationInterval = 3;
-    new ProductType(name, amount, minimum, notificationInterval);
-    assertThrows(()=>new ProductType(name, amount, minimum, 0));
-    assertThrows(()=>new ProductType(name, amount, minimum, -notificationInterval));
-
-    // no constraints of lastNotified
 }
 
 function testInMemoryProductTypeRepository(){
@@ -308,16 +253,16 @@ function testInMemoryProductTypeRepository(){
     const productTypeComparator = (a, b) => a.dataEquals(b);
 
     let sut = new InMemoryProductTypeRepository();
-    sut.addProductType(data);
+    sut.addEntity(data);
     assertContains(data, sut.products.values(), productTypeComparator);
 
     sut = new InMemoryProductTypeRepository([data]);
-    let actual = sut.getProductTypeByName(data.name);
+    let actual = sut.getEntityByKey(data.name);
     assert(data.dataEquals(actual));
 
     const values = ["foo", "bar", "baz"].map(n => new ProductType(n)); 
     sut = new InMemoryProductTypeRepository(values);
-    actual = sut.getAllProductTypes();
+    actual = sut.getAllEntities();
     assert(3 === actual.length);
     assertContains(values[0], actual, productTypeComparator);
     assertContains(values[1], actual, productTypeComparator);
@@ -326,8 +271,8 @@ function testInMemoryProductTypeRepository(){
     sut = new InMemoryProductTypeRepository([data]);
     let changed = data.copy();
     changed.quantity += 1;
-    sut.updateProductType(changed);
-    actual = sut.getProductTypeByName(data.name);
+    sut.update(changed);
+    actual = sut.getEntityByKey(data.name);
     assert(changed.dataEquals(actual));
     assert(!data.dataEquals(actual));
 }
@@ -335,20 +280,17 @@ function testInMemoryProductTypeRepository(){
 function testProductTypeService(){
     const productTypeComparator = (a, b) => a.dataEquals(b);
     const exists = new ProductType("foo");
-    const notYetAdded = new ProductType("bar");
     const repo = new InMemoryProductTypeRepository([exists]);
     const sut = new ProductTypeService(repo);
     const expected = [
-        exists.copy(),
-        notYetAdded
+        exists.copy()
     ];
     expected[0].quantity += 1;
 
     sut.handleLogForm(expected);
-    const actual = repo.getAllProductTypes();
+    const actual = repo.getAllEntities();
 
     assert(expected.length === actual.length);
     assertContains(expected[0], actual, productTypeComparator);
-    assertContains(expected[1], actual, productTypeComparator);
     assertDoesNotContain(exists, actual);
 }

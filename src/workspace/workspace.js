@@ -20,38 +20,45 @@ const FORM_HANDLER_NAME = onFormSubmit.name;
 
 /*
 this does not automatically start handling forms, and is explicitly registered
-in setupFormHandler
+in _setupFormHandler
 */
 function onFormSubmit(e){
+    console.log("Received form submission: \n" + JSON.stringify(e));
     /*
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
     */
     if("Product name" in e.namedValues){
-        onNewProductTypeFormSubmit(e);
+        newProductTypeFormModule().receiveForm(e);
+    } else if("Email" in e.namedValues){
+        userFormModule().receiveForm(e);
     } else {
-        onStockUpdateFormSubmit(e);
+        stockUpdateFormModule().receiveForm(e);
     }    
 }
 
 
+
+
 /*
-Using this to get around the Google script inheritance issue caused by 
-unpredictable script execution order.
+Circumvents the Google script inheritance issue caused by unpredictable 
+script execution order. Also note that inheritance does not work as expected
+even when used in the same file as the superclass.
 */
-class FormHelper {
+class Component {
     /**
-     * 
      * @param {SpreadsheetApp.Spreadsheet} workbook 
      * @param {string} namespace 
      * @param {(string)=>string} namespaceToName
-     * @param {FormApp.Form function(string)} create
+     * @param {(string)=>Form|null|undefined} create
+     * @param {(FormEvent)=>void} onSubmit 
      */
-    constructor(workbook, namespace, namespaceToName, create){
+    constructor(workbook, namespace, namespaceToName, create, onSubmit){
         this.workbook = workbook;
         this.namespace = namespace;
         this.name = namespaceToName(namespace);
         this.create = create;
+        this.onSubmit = onSubmit;
     }
 
     setup(){
@@ -60,7 +67,13 @@ class FormHelper {
     }
 
     _doSetup(){
-        const form = this.create(this.namespace); // NOT this.name
+        const formOrMaybeNot = this.create(this.namespace); // NOT this.name
+        if(formOrMaybeNot && formOrMaybeNot.setDestination){
+            this._doSetupForm(formOrMaybeNot);
+        }
+    }
+
+    _doSetupForm(form){
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
             this.workbook.getId()
@@ -88,7 +101,30 @@ class FormHelper {
             return form.getId() === formId; 
         });
         createdSheet.setName(this.name);
+        createdSheet.hideSheet();
     }
+
+    delete(){
+        deleteSheet(this.workbook, this.name);
+    }
+
+    receiveForm(event){
+        this.onSubmit(event);
+    }
+}
+
+function allModulesFor(workbook=null, namespace=""){
+    if(workbook === null){
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
+    return [
+        settingSheetModule(workbook, namespace), // must be first
+        inventorySheetModule(workbook, namespace),
+        userSheetModule(workbook, namespace),
+        userFormModule(workbook, namespace),
+        newProductTypeFormModule(workbook, namespace),
+        stockUpdateFormModule(workbook, namespace)
+    ];
 }
 
 
@@ -98,35 +134,11 @@ class FormHelper {
  * @param {string|undefined} namespace - can specify for testing
  */
 function setupWorkspace(workbook, namespace=""){
-    setupInventorySheet(workbook, namespace);
-
-    const newProductTypeFormHelper = new FormHelper(
-        workbook,
-        namespace,
-        newProductTypeFormNameFor,
-        createNewProductTypeForm
-    );
-    newProductTypeFormHelper.setup();
-
-    setupStockUpdateFormFor(workbook, namespace);
-
-    setupFormHandler(workbook);
+    allModulesFor(workbook, namespace).forEach(m=>m.setup());
+    _setupFormHandler(workbook);
 }
 
-/*
-Since this is needed by regenerateStockUpdateFormFor, moved to this function 
- */
-function setupStockUpdateFormFor(workbook, namespace=""){
-    const stockUpdateFormHelper = new FormHelper(
-        workbook,
-        namespace,
-        stockUpdateFormNameFor,
-        createNewStockUpdateForm
-    );
-    stockUpdateFormHelper.setup();
-}
-
-function setupFormHandler(workbook){
+function _setupFormHandler(workbook){
     const triggers = ScriptApp.getProjectTriggers();
     const formSubmitTrigger = triggers.find(t => t.getHandlerFunction() === FORM_HANDLER_NAME);
     if(!formSubmitTrigger){
@@ -138,9 +150,7 @@ function setupFormHandler(workbook){
 }
 
 function deleteWorkspace(workbook, namespace=""){
-    deleteSheet(workbook, nameFor("inventory", namespace));
-    deleteSheet(workbook, newProductTypeFormNameFor(namespace));
-    deleteSheet(workbook, stockUpdateFormNameFor(namespace));
+    allModulesFor(workbook, namespace).forEach(m=>m.delete());
     if("" === namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
@@ -205,8 +215,19 @@ Unit tests
 */
 
 function testWorkspaceModule(){
+    const workbook = SpreadsheetApp.getActiveSpreadsheet();
+    deleteWorkspace(workbook, "test");
+    setupWorkspace(workbook, "test");
+
     testNameFor();
-    testGoogleSheetsProductTypeRepository();  
+    testEmailModule();
+    testGoogleSheetsProductTypeRepository(workbook);
+
+    /*
+    only remove test sheets if tests are successful, as this allows us to
+    diagnose errors if one of these tests fails
+    */
+    deleteWorkspace(workbook, "test");
 }
 
 function testNameFor(){
