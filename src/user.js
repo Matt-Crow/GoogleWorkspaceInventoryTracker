@@ -38,41 +38,17 @@ class User {
     }
 }
 
-class InMemoryUserRepository {
-    constructor(users=[]){
-        this.users = new Map();
-        users.forEach(u=>this.users.set(u.email, u));
-    }
 
-    addEntity(user){
-        if(this.hasEntityWithKey(user.email)){
-            throw new Error(`User already exists with email = "${user.email}"`);
-        }
-        this.users.set(user.email, user.copy());
-    }
-
-    hasEntityWithKey(email){
-        return this.users.has(email);
-    }
-
-    getEntityByKey(email){
-        if(!this.hasEntityWithKey(email)){
-            throw new Error(`No user has email = "${email}"`);
-        }
-        return this.users.get(email).copy();
-    }
-
-    getAllEntities(){
-        return Array.from(this.users.values()).map(u=>u.copy());
-    }
-
-    update(user){
-        if(!this.hasEntityWithKey(user.email)){
-            throw new Error(`No user has email = "${user.email}"`);
-        }
-        this.users.set(user.email, user);
-    }
+function makeInMemoryUserRepository(users=[]){
+    const repo = new InMemoryRepository(
+        u => u.email,
+        email => email,
+        u => u.copy()
+    );
+    users.forEach(u => repo.addEntity(u));
+    return repo;
 }
+
 
 class UserService {
     constructor(repo){
@@ -105,7 +81,7 @@ function testUserModule(){
         new User(doesNotWantLog),
         new User(wantsLog, true, true)
     ];
-    const repo = new InMemoryUserRepository(users);
+    const repo = makeInMemoryUserRepository(users);
     const sut = new UserService(repo);
 
     const actual = sut.getStockUpdateFormEmails();

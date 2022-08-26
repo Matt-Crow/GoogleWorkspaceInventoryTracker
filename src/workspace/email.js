@@ -119,7 +119,7 @@ function testEmailModule(){
         new User("foo.bar@gmail.com", true, false),
         new User("baz.qux@gmail.com", false, false)
     ];
-    const repo = new InMemoryUserRepository(users);
+    const repo = makeInMemoryUserRepository(users);
     const userService = new UserService(repo);
     let settings = {};
     const emailRecorder = (email)=>{

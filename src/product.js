@@ -49,65 +49,6 @@ class ProductType {
 
 
 /**
- * provides the interface for CRUD operations on ProductTypes
- * 
- * because of how Google script concatinates files together, class extension
- * does not work, so this class does nothing but provide developer guidelines
- */
-class AbstractProductTypeRepository {
-    /**
-     * records a new ProductType in the repository
-     * subclasses are responsible for deciding how to handle adding a 
-     * ProductType whose name is already used
-     * 
-     * @param {ProductType} productType 
-     */
-    addEntity(productType){
-        throw new Error("addEntity is not implemented");
-    }
-
-    /**
-     * @param {string} name
-     * @returns {boolean} whether this repository has a ProductType with the
-     *  given name 
-     */
-    hasEntityWithKey(name){
-        throw new Error("hasEntityWithKey is not implemented");
-    }
-
-    /**
-     * retrieves the ProductType whose name matches the given name
-     * subclasses are responsible for deciding how to handle getting a name for
-     * which the exists no product
-     * 
-     * @param {string} name 
-     * @returns {ProductType}
-     */
-    getEntityByKey(name){
-        throw new Error("getEntityByKey is not implemented");
-    }
-
-    /**
-     * @returns {ProductType[]}
-     */
-    getAllEntities(){
-        throw new Error("getAllEntities is not implemented");
-    }
-
-    /**
-     * Changes the ProductType in this repository whose name matches that of the
-     * given parameter so that its data matches that of the parameter.
-     * Subclasses are responsible for how to handle updating a ProductType that
-     * does not exist in the repository.
-     * 
-     * @param {ProductType} productType 
-     */
-    update(productType){
-        throw new Error("update is not implemented");
-    }
-}
-
-/**
  * ProductTypes are considered equal if their names are the same, ignoring case
  * 
  * @param {string} name 
@@ -117,49 +58,14 @@ function normalizeProductTypeName(name){
     return name.toLowerCase();
 }
 
-/**
- * This non-persistant ProductType repository used for testing
- */
-class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
-    constructor(products=[]){
-        super();
-        this.products = new Map();
-        products.forEach(product => this.products.set(
-            normalizeProductTypeName(product.name),
-            product
-        ));
-    }
-
-    addEntity(productType){
-        const name = normalizeProductTypeName(productType.name);
-        if(this.hasEntityWithKey(name)){
-            throw new Error(`Product already exists with name "${name}"`);
-        }
-        this.products.set(name, productType.copy());
-    }
-
-    hasEntityWithKey(name){
-        return this.products.has(normalizeProductTypeName(name));
-    }
-
-    getEntityByKey(name){
-        if(!this.hasEntityWithKey(name)){
-            throw new Error(`No product type with name "${name}"`);
-        }
-        return this.products.get(normalizeProductTypeName(name)).copy();
-    }
-
-    getAllEntities(){
-        return Array.from(this.products.values()).map(pt => pt.copy());
-    }
-
-    update(productType){
-        const name = normalizeProductTypeName(productType.name);
-        if(!this.hasEntityWithKey(name)){
-            throw new Error(`Cannot update product type with name "${name}", as no product with that name exists`);
-        }
-        this.products.set(name, productType);
-    }
+function makeInMemoryProductTypeRepository(entities=[]){
+    const repo = new InMemoryRepository(
+        productType => productType.name,
+        name => normalizeProductTypeName(name),
+        productType => productType.copy()
+    );
+    entities.forEach(e => repo.addEntity(e));
+    return repo;
 }
 
 
@@ -168,7 +74,8 @@ class InMemoryProductTypeRepository extends AbstractProductTypeRepository {
  */
 class ProductTypeService {
     /**
-     * @param {AbstractProductTypeRepository} repository 
+     * @param {Repository} repository stores the ProductTypes this interacts
+     *  with.
      */
     constructor(repository){
         this.repository = repository;
@@ -252,23 +159,23 @@ function testInMemoryProductTypeRepository(){
     const data = new ProductType("foo");
     const productTypeComparator = (a, b) => a.dataEquals(b);
 
-    let sut = new InMemoryProductTypeRepository();
+    let sut = makeInMemoryProductTypeRepository();
     sut.addEntity(data);
-    assertContains(data, sut.products.values(), productTypeComparator);
+    assertContains(data, sut._entities.values(), productTypeComparator);
 
-    sut = new InMemoryProductTypeRepository([data]);
+    sut = makeInMemoryProductTypeRepository([data]);
     let actual = sut.getEntityByKey(data.name);
     assert(data.dataEquals(actual));
 
     const values = ["foo", "bar", "baz"].map(n => new ProductType(n)); 
-    sut = new InMemoryProductTypeRepository(values);
+    sut = makeInMemoryProductTypeRepository(values);
     actual = sut.getAllEntities();
     assert(3 === actual.length);
     assertContains(values[0], actual, productTypeComparator);
     assertContains(values[1], actual, productTypeComparator);
     assertContains(values[2], actual, productTypeComparator);
 
-    sut = new InMemoryProductTypeRepository([data]);
+    sut = makeInMemoryProductTypeRepository([data]);
     let changed = data.copy();
     changed.quantity += 1;
     sut.update(changed);
@@ -280,7 +187,7 @@ function testInMemoryProductTypeRepository(){
 function testProductTypeService(){
     const productTypeComparator = (a, b) => a.dataEquals(b);
     const exists = new ProductType("foo");
-    const repo = new InMemoryProductTypeRepository([exists]);
+    const repo = makeInMemoryProductTypeRepository([exists]);
     const sut = new ProductTypeService(repo);
     const expected = [
         exists.copy()

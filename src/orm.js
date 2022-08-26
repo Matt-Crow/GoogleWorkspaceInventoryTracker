@@ -15,6 +15,56 @@ class Repository {
     }
 }
 
+/**
+ * stores entities in memory
+ */
+class InMemoryRepository {
+    /**
+     * 
+     * @param {(e: TEntity)=>TKey} getKey maps entities to their primary key
+     * @param {(key: TKey)=>TKey} formatKey for example, uppercasing names
+     * @param {(e: TEntity)=>TEntity} copy used to copy entities for storage.
+     *  Can return e to store argument.
+     */
+    constructor(getKey, formatKey, copy){
+        this._entities = new Map();
+        this._getKey = getKey;
+        this._formatKey = formatKey;
+        this._copy = copy;
+    }
+
+    addEntity(entity){
+        const key = this._formatKey(this._getKey(entity));
+        if(this.hasEntityWithKey(key)){
+            throw new Error(`Duplicate key: ${key}`);
+        }
+        this._entities.set(key, this._copy(entity));
+    }
+
+    hasEntityWithKey(key){
+        return this._entities.has(this._formatKey(key));
+    }
+
+    getEntityByKey(key){
+        key = this._formatKey(key);
+        if(!this.hasEntityWithKey(key)){
+            throw new Error(`No entity with key: ${key}`);
+        }
+        return this._copy(this._entities.get(key));
+    }
+
+    getAllEntities(){
+        return Array.from(this._entities.values()).map(e => this._copy(e));
+    }
+
+    update(entity){
+        const key = this._formatKey(this._getKey(entity));
+        if(!this.hasEntityWithKey(key)){
+            throw new Error(`No entity with key, so cannot update: ${key}`);
+        }
+        this._entities.set(key, this._copy(entity));
+    }
+}
 
 
 /**
