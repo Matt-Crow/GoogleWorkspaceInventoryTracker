@@ -11,9 +11,9 @@ function onOpen(){
 	ui.createMenu("G-WIT")
 		.addItem("Set up", "setup")
 		.addItem("Reset workspace", "resetWorkspace")
-		.addItem("Regenerate stock update form", "regenerateStockUpdateForm")
-		.addItem("Send stock update form", sendStockUpdateForm.name)
-		.addItem("Prime stock update form", primeStockUpdateForm.name)
+		.addItem("Regenerate inventory form", "regenerateInventoryForm")
+		.addItem("Send inventory form", sendInventoryForm.name)
+		.addItem("Prime inventory form", primeInventoryForm.name)
 		.addItem("Run unit tests (fast)", "unitTests")
 		.addItem("Run integration tests (slow)", "integrationTests")
 		.addToUi();
@@ -40,12 +40,12 @@ function resetWorkspace(){
 /**
  * this might be temporary
  */
-function regenerateStockUpdateForm(){
-	regenerateStockUpdateFormFor(SpreadsheetApp.getActiveSpreadsheet());
+function regenerateInventoryForm(){
+	regenerateInventoryFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
 
 function unitTests(){
-	testProductTypeModule();
+	testItemModule();
 	testSettings();
 	testUserModule();
 	SpreadsheetApp.getUi().alert("All tests passed successfully!");

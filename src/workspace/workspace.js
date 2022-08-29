@@ -28,12 +28,12 @@ function onFormSubmit(e){
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
     */
-    if("Product name" in e.namedValues){
-        newProductTypeFormModule().receiveForm(e);
+    if("Item name" in e.namedValues){
+        newItemFormModule().receiveForm(e);
     } else if("Email" in e.namedValues){
         userFormModule().receiveForm(e);
     } else {
-        stockUpdateFormModule().receiveForm(e);
+        inventoryFormModule().receiveForm(e);
     }    
 }
 
@@ -122,8 +122,8 @@ function allModulesFor(workbook=null, namespace=""){
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
-        newProductTypeFormModule(workbook, namespace),
-        stockUpdateFormModule(workbook, namespace)
+        newItemFormModule(workbook, namespace),
+        inventoryFormModule(workbook, namespace)
     ];
 }
 
@@ -221,7 +221,7 @@ function testWorkspaceModule(){
 
     testNameFor();
     testEmailModule();
-    testGoogleSheetsProductTypeRepository(workbook);
+    testGoogleSheetsItemRepository(workbook);
 
     /*
     only remove test sheets if tests are successful, as this allows us to

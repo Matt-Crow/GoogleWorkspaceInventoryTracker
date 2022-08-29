@@ -16,7 +16,7 @@ class User {
      * 
      * @param {string} email 
      * @param {boolean|undefined} wantsLog - true if this user should receive 
-     *  the stock update form
+     *  the inventory form
      * @param {boolean|undefined} wantsReport - true if this user should receive
      *  the restocking report email
      */
@@ -56,10 +56,10 @@ class UserService {
     }
 
     /**
-     * @returns {string[]} the email addresses of users who want the stock 
-     *  update form
+     * @returns {string[]} the email addresses of users who want the inventory 
+     *  form
      */
-    getStockUpdateFormEmails(){
+    getInventoryFormEmails(){
         return this.users.getAllEntities().filter(u=>u.wantsLog).map(u=>u.email);
     }
 
@@ -84,7 +84,7 @@ function testUserModule(){
     const repo = makeInMemoryUserRepository(users);
     const sut = new UserService(repo);
 
-    const actual = sut.getStockUpdateFormEmails();
+    const actual = sut.getInventoryFormEmails();
 
     assertContains(wantsLog, actual);
     assertDoesNotContain(doesNotWantLog, actual);

@@ -34,18 +34,18 @@ function _createUserForm(namespace){
         .build();
 
     const form = FormApp.create(_userFormNameFor(namespace));
-    form.setDescription("Sign up to receive the Stock Update or Log email.");
+    form.setDescription("Sign up to receive the inventory update or Log email.");
 
     form.addTextItem()
         .setTitle("Email")
         .setValidation(mustBeEmail)
         .setRequired(true);
     
-    const stock = form.addMultipleChoiceItem();
-    stock.setTitle("Would you like to receive a copy of the Stock Update form?")
+    const inventory = form.addMultipleChoiceItem();
+    inventory.setTitle("Would you like to receive a copy of the inventory form?")
         .setChoices([
-            stock.createChoice("No"),
-            stock.createChoice("Yes")
+            inventory.createChoice("No"),
+            inventory.createChoice("Yes")
         ]);
     
     const log = form.addMultipleChoiceItem();
