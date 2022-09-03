@@ -2,11 +2,15 @@
  * This module is responsible for services related to Users
  * 
  * Data class: User
- * #-------------#---------#
- * |       email | string  |
- * |    wantsLog | boolean |
- * | wantsReport | boolean |
- * #-------------#---------#
+ * #---------------#---------#
+ * |         email | string  |
+ * |      wantsLog | boolean |
+ * | wantsLogReply | boolean |
+ * |   wantsReport | boolean |
+ * #---------------#---------#
+ * 
+ * Note that it is not an error for a user to want the log reply, yet not the 
+ * log, as that allows them to learn when others update the inventory.
  */
 
 
@@ -15,26 +19,35 @@ class User {
     /**
      * 
      * @param {string} email 
-     * @param {boolean|undefined} wantsLog - true if this user should receive 
+     * @param {boolean|undefined} wantsLog true if this user should receive 
      *  the inventory form
-     * @param {boolean|undefined} wantsReport - true if this user should receive
+     * @param {boolean|undefined} wantsLogReply the if this user should receive
+     *  an email whenever someone submits the inventory form
+     * @param {boolean|undefined} wantsReport true if this user should receive
      *  the restocking report email
      */
-    constructor(email, wantsLog=false, wantsReport=false){
+    constructor(email, wantsLog=false, wantsLogReply=false, wantsReport=false){
         mustHaveValue(email);
         this.email = email;
-        this.wantsLog = wantsLog;
-        this.wantsReport = wantsReport;
+        this.wantsLog = !!wantsLog;
+        this.wantsLogReply = !!wantsLogReply;
+        this.wantsReport = !!wantsReport;
     }
 
     dataEquals(other){
         return this.email === other.email
             && this.wantsLog === other.wantsLog
+            && this.wantsLogReply === other.wantsLogReply
             && this.wantsReport === other.wantsReport;
     }
 
     copy(){
-        return new User(this.email, this.wantsLog, this.wantsReport);
+        return new User(
+            this.email, 
+            this.wantsLog, 
+            this.wantsLogReply, 
+            this.wantsReport
+        );
     }
 }
 
@@ -60,7 +73,11 @@ class UserService {
      *  form
      */
     getInventoryFormEmails(){
-        return this.users.getAllEntities().filter(u=>u.wantsLog).map(u=>u.email);
+        return this.where(u=>u.wantsLog);
+    }
+
+    where(predicate){
+        return this.users.getAllEntities().filter(predicate).map(u=>u.email);
     }
 
     handleUserForm(user){
@@ -79,7 +96,7 @@ function testUserModule(){
     const doesNotWantLog = "foo.bar@gmail.com";
     const users = [
         new User(doesNotWantLog),
-        new User(wantsLog, true, true)
+        new User(wantsLog, true, true, true)
     ];
     const repo = makeInMemoryUserRepository(users);
     const sut = new UserService(repo);

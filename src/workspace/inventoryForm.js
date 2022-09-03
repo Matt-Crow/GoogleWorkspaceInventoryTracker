@@ -18,7 +18,7 @@ function inventoryFormModule(workbook=null, namespace=""){
         namespace,
         _inventoryFormNameFor,
         (ns)=>{
-            const form = _createNewInventoryForm(ns);
+            const form = _createNewInventoryForm(workbook, ns);
             createSettings(workbook, namespace).setInventoryForm(form);
             return form;
         },
@@ -30,22 +30,22 @@ function _inventoryFormNameFor(namespace=""){
     return nameFor("Inventory form", namespace);
 }
 
-function _createNewInventoryForm(namespace=""){
+function _createNewInventoryForm(workbook=null, namespace=""){
     const form = FormApp.create(_inventoryFormNameFor(namespace));
     form.setDescription("How many of each of these are in the inventory now?");
 
-    _populateInventoryForm(form, namespace);
+    _populateInventoryForm(form, workbook, namespace);
 
     return form;
 }
 
-function _populateInventoryForm(form, namespace){
+function _populateInventoryForm(form, workbook, namespace){
     const mustBeANonNegativeNumber = FormApp.createTextValidation()
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
     
-    const service = createItemService(namespace);
+    const service = createItemService(workbook, namespace);
     const itemNames = service.getAllEntities().map(pt => pt.name);
 
     itemNames.forEach(itemName => {
@@ -98,7 +98,7 @@ function regenerateInventoryFormFor(workbook, namespace=""){
         const formUrl = sheet.getFormUrl();
         const oldForm = FormApp.openByUrl(formUrl);
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
-        _populateInventoryForm(oldForm, namespace);
+        _populateInventoryForm(oldForm, workbook, namespace);
     }
     createSettings(workbook, namespace).setInventoryFormStale(false);
 }

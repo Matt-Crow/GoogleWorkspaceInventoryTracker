@@ -49,6 +49,14 @@ function _createUserForm(namespace){
         ])
         .setRequired(true);
     
+    const reply = form.addMultipleChoiceItem();
+    reply.setTitle("Would you like to receive the an email whenever someone submits the inventory form?")
+        .setChoices([
+            reply.createChoice("No"),
+            reply.createChoice("Yes")
+        ])
+        .setRequired(true);
+    
     const log = form.addMultipleChoiceItem();
     log.setTitle("Would you like to receive the inventory report so you can see what's running low on stock?")
         .setChoices([
@@ -67,8 +75,9 @@ function _onUserFormSubmit(e){
     // overrides previous user preferences, which the client is OK with
     const email = row[0];
     const wantsLog = row[1] === "Yes";
-    const wantsReport = row[2] === "Yes";
-    const user = new User(email, wantsLog, wantsReport);
+    const wantsLogReply = row[2] === "Yes";
+    const wantsReport = row[3] === "Yes";
+    const user = new User(email, wantsLog, wantsLogReply, wantsReport);
 
     console.log("New user: " + JSON.stringify(user));
 

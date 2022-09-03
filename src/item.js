@@ -73,9 +73,12 @@ class ItemService {
     /**
      * @param {Repository} repository stores the Items this interacts
      *  with.
+     * @param {EmailService} emails sends emails upon receiving this inventory
+     *  form.
      */
-    constructor(repository){
+    constructor(repository, emails){
         this.repository = repository;
+        this._emails = emails;
     }
 
     /**
@@ -94,6 +97,7 @@ class ItemService {
         } else {
             this.repository.addEntity(item);
         }
+        this._emails.sendInventoryFormReply();
     }
 
     /**
@@ -117,6 +121,8 @@ class ItemService {
         for(const changedItem of nameToItem.values()){
             this.repository.update(changedItem);
         }
+
+        this._emails.sendInventoryFormReply();
     }
 }
 
@@ -185,7 +191,10 @@ function testItemService(){
     const itemComparator = (a, b) => a.dataEquals(b);
     const exists = new Item("foo");
     const repo = makeInMemoryItemRepository([exists]);
-    const sut = new ItemService(repo);
+    const emails = {
+        sendInventoryFormReply: ()=>null
+    };
+    const sut = new ItemService(repo, emails);
     const expected = [
         exists.copy()
     ];
