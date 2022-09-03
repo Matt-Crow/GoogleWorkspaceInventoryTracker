@@ -34,7 +34,7 @@ function _createUserForm(namespace){
         .build();
 
     const form = FormApp.create(_userFormNameFor(namespace));
-    form.setDescription("Sign up to receive the inventory update or Log email.");
+    form.setDescription("Sign up to receive email notifications.");
 
     form.addTextItem()
         .setTitle("Email")
@@ -42,18 +42,20 @@ function _createUserForm(namespace){
         .setRequired(true);
     
     const inventory = form.addMultipleChoiceItem();
-    inventory.setTitle("Would you like to receive a copy of the inventory form?")
+    inventory.setTitle("Would you like to receive the inventory form so you can update the inventory?")
         .setChoices([
             inventory.createChoice("No"),
             inventory.createChoice("Yes")
-        ]);
+        ])
+        .setRequired(true);
     
     const log = form.addMultipleChoiceItem();
-    log.setTitle("Would you like to receive a copy of the Log report email?")
+    log.setTitle("Would you like to receive the inventory report so you can see what's running low on stock?")
         .setChoices([
             log.createChoice("No"),
             log.createChoice("Yes")
-        ]);
+        ])
+        .setRequired(true);
 
     return form;
 }
@@ -62,10 +64,7 @@ function _onUserFormSubmit(e){
     const row = e.values;
     row.shift(); // get rid of timestamp
 
-    /*
-    this still overrides previous user if row[1] or row[2] is empty, setting it
-    to false. Asking client expected behavior.
-    */
+    // overrides previous user preferences, which the client is OK with
     const email = row[0];
     const wantsLog = row[1] === "Yes";
     const wantsReport = row[2] === "Yes";

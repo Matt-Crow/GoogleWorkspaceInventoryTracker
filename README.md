@@ -68,6 +68,11 @@ You can read more about the problem domain in the [Software Requirement Specific
 
 ## Known issues
 
+- Users with access to either the user form or the spreadsheet an add or modify
+    the email notification preferences of other users, and so the system can be
+    used to send unwanted emails to other users. As such, usage of this system
+    assumes no bad actors are involved.
+ 
 - *I just added an item to the inventory, but it isn't showing up in the inventory form.*
     The program only changes the inventory form whenever it sends it, so the new item will show up the next time it sends.
 
