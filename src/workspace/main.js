@@ -14,10 +14,14 @@ function onOpen(){
 		.addItem("Regenerate inventory form", "regenerateInventoryForm")
 		.addItem("Send inventory form", sendInventoryForm.name)
 		.addItem("Prime inventory form", primeInventoryForm.name)
+		.addSubMenu(ui.createMenu("Restock reminder")
+			.addItem("Send restock reminder", sendRestockReminder.name)
+		)
 		.addItem("Run unit tests (fast)", "unitTests")
 		.addItem("Run integration tests (slow)", "integrationTests")
 		.addToUi();
 }
+
 
 /**
  * mutates the current Google Sheet into a suitable environment for the program
@@ -28,6 +32,7 @@ function setup(){
 	SpreadsheetApp.getUi().alert("Setup complete!");
 }
 
+
 /**
  * a testing function that removes all the auto-generated Google Workspace stuff
  */
@@ -37,12 +42,31 @@ function resetWorkspace(){
 	setup();
 }
 
+
 /**
  * this might be temporary
  */
 function regenerateInventoryForm(){
 	regenerateInventoryFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
+
+
+function sendInventoryForm(){
+    createEmailService().sendInventoryForm();
+}
+
+
+function primeInventoryForm(){
+    const msg = createEmailService().updateTrigger();
+    SpreadsheetApp.getUi().alert(msg);
+}
+
+
+function sendRestockReminder(){
+    const lowOnStock = createItemService().getItemsToRestock();
+    createEmailService().sendRestockReminder(lowOnStock);
+}
+
 
 function unitTests(){
 	testItemModule();
