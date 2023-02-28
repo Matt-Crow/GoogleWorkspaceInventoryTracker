@@ -73,6 +73,14 @@ class Settings {
         return this.get("New item form URL");
     }
 
+    setRemoveItemForm(form) {
+        this.set("Remove item form URL", form.getPublishedUrl());
+    }
+
+    getRemoveItemFormUrl() {
+        return this.get("Remove item form URL");
+    }
+
     setWorkbook(workbook){
         this.set("Workbook URL", workbook.getUrl());
     }
@@ -98,6 +106,7 @@ const DEFAULT_SETTINGS = [
     new Setting("User form URL", "", "Use this form to sign up for notifications or change your preferences"),
     new Setting("Inventory form URL", "", "Use this form to update the inventory"),
     new Setting("New item form URL", "", "Use this form to record a new item in the inventory"),
+    new Setting("Remove item form URL", "", "Use this form to remove an existing item from the inventory"),
     new Setting("Workbook URL", "", "The URL of this workbook")
 ];
 

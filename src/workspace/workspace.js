@@ -32,6 +32,8 @@ function onFormSubmit(e){
         newItemFormModule().receiveForm(e);
     } else if("Email" in e.namedValues){
         userFormModule().receiveForm(e);
+    } else if("Which item do you want to remove?" in e.namedValues) {
+        removeItemFormModule().receiveForm(e);
     } else {
         inventoryFormModule().receiveForm(e);
     }    
@@ -123,7 +125,8 @@ function allModulesFor(workbook=null, namespace=""){
         userSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
         newItemFormModule(workbook, namespace),
-        inventoryFormModule(workbook, namespace)
+        inventoryFormModule(workbook, namespace),
+        removeItemFormModule(workbook, namespace)
     ];
 }
 
