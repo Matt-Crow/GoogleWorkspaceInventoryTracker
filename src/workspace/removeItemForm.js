@@ -13,11 +13,8 @@ function removeItemFormModule(workbook=null, namespace="") {
         namespace,
         _removeItemFormNameFor,
         (ns) => {
-            const itemService = createItemService(workbook, namespace);
-            const items = itemService.getAllEntities();
-            const options = items.map(item => item.name);
-            const form = _createRemoveItemForm(ns, options);
-            createSettings(workbook, namespace).setRemoveItemForm(form);
+            const form = _createRemoveItemForm(workbook, ns);
+            createSettings(workbook, ns).setRemoveItemForm(form);
             return form;
         },
         _onRemoveItemFormSubmit
@@ -29,20 +26,56 @@ Private functions
 */
 
 function _removeItemFormNameFor(namespace="") {
-    return _newItemFormNameFor("Remove item", namespace);
+    return nameFor("Remove item", namespace);
 }
 
-function _createRemoveItemForm(namespace, options) {
+function _createRemoveItemForm(workbook, namespace) {
     const form = FormApp.create(_removeItemFormNameFor(namespace));
     form.setDescription("Remove an existing item from the inventory.");
 
-    const dropDown = form.addListItem();
-    dropDown.setTitle("Which item do you want to remove?")
-        .setChoices(options.map(opt => dropDown.createChoice(opt)));
+    _populateRemoveItemForm(form, workbook, namespace);
     
     return form;
 }
 
+function _populateRemoveItemForm(form, workbook=null, namespace="") {
+    if (workbook === null) {
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
+
+    const service = createItemService(workbook, namespace);
+    const itemNames = service.getAllEntities().map(item => item.name);
+
+    const dropDown = form.addListItem();
+    dropDown.setTitle("Which item do you want to remove?")
+        .setChoices(itemNames.map(opt => dropDown.createChoice(opt)));
+}
+
 function _onRemoveItemFormSubmit(event) {
-    console.log(event); // todo
+    const row = event.values;
+    row.shift(); // removes first cell (timestamp)
+
+    const name = row[0];
+
+    createItemService().remove(name);
+    createSettings().setInventoryFormStale(true);
+    regenerateRemoveItemFormFor();
+}
+
+function regenerateRemoveItemFormFor(workbook=null, namespace="") {
+    if (workbook === null) {
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
+
+    const name = _removeItemFormNameFor(namespace);
+    const sheet = workbook.getSheetByName(name);
+    if (sheet === null) { // not generated yet
+        removeItemFormModule(workbook, namespace).setup();
+    } else {
+        // remove old choices, repopulate
+        const formUrl = sheet.getFormUrl();
+        const form = FormApp.openByUrl(formUrl);
+        form.getItems().forEach(item => form.deleteItem(item));
+        _populateRemoveItemForm(form, workbook, namespace);
+    }
 }

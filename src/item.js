@@ -136,16 +136,14 @@ class ItemService {
     }
 
     /**
-     * Removes items with the given names from the backing store. It is not an 
+     * Removes an item with the given name from the backing store. It is not an 
      * error to attempt to remove an item that does not exist, so this operation 
      * is idempotent.
      * 
-     * @param {string[]} itemNames the names of items to remove
+     * @param {string} itemName the name of item to remove
      */
-    removeItems(itemNames=[]) {
-        for (const itemName of itemNames) {
-            this.repository.deleteEntityWithKey(itemName);
-        }
+    remove(itemName) {
+        this.repository.deleteEntityWithKey(itemName);
     }
 }
 
@@ -253,7 +251,9 @@ function testRemoveItems() {
     const repo = makeInMemoryItemRepository([removeMe, keepMe]);
     const sut = new ItemService(repo, {});
 
-    sut.removeItems([removeMe.name, "baz", "qux"]);
+    sut.remove(removeMe.name);
+    sut.remove("baz");
+    sut.remove("qux");
     const remaining = sut.getAllEntities();
 
     assertContains(keepMe, remaining, itemComparator);
