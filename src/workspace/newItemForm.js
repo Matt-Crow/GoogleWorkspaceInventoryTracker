@@ -90,5 +90,5 @@ function _onNewItemFormSubmit(event){
     console.log("New item: " + JSON.stringify(item));
 
     createItemService().handleNewItem(item);
-    createSettings().setInventoryFormStale(true);
+    Workspace.current().itemsChanged();
 }

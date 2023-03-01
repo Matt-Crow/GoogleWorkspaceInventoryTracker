@@ -52,14 +52,15 @@ function _populateRemoveItemForm(form, workbook=null, namespace="") {
 }
 
 function _onRemoveItemFormSubmit(event) {
-    const row = event.values;
-    row.shift(); // removes first cell (timestamp)
-
-    const name = row[0];
+    /**
+     * Every time the form regenerates, event.values gets an extra empty string
+     * appended after the timestamp. The last value in the array is the one we
+     * want, so grab that one.
+     */
+    const name = event.values.at(-1);
 
     createItemService().remove(name);
-    createSettings().setInventoryFormStale(true);
-    regenerateRemoveItemFormFor();
+    Workspace.current().itemsChanged();
 }
 
 function regenerateRemoveItemFormFor(workbook=null, namespace="") {
