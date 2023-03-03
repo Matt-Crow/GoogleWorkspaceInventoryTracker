@@ -1,62 +1,62 @@
 /**
  * This module is responsible for the Google Form used to update the quantity of
- * each product currently in the inventory.
+ * each item currently in the inventory.
  */
 
 /**
- * Use this to interface with the "Stock Update" form component of the system.
+ * Use this to interface with the Inventory form component of the system.
  * @param {SpreadsheetApp.Spreadsheet|null} workbook 
  * @param {string|undefined} namespace 
- * @returns the "Stock Update" form component of the application
+ * @returns the Inventory form component of the application
  */
-function stockUpdateFormModule(workbook=null, namespace=""){
+function inventoryFormModule(workbook=null, namespace=""){
     if(workbook === null){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
     return new Component(
         workbook,
         namespace,
-        _stockUpdateFormNameFor,
+        _inventoryFormNameFor,
         (ns)=>{
-            const form = _createNewStockUpdateForm(ns);
-            createSettings(workbook, namespace).setStockUpdateForm(form);
+            const form = _createNewInventoryForm(workbook, ns);
+            createSettings(workbook, namespace).setInventoryForm(form);
             return form;
         },
-        _onStockUpdateFormSubmit
+        _onInventoryFormSubmit
     );
 }
 
-function _stockUpdateFormNameFor(namespace=""){
-    return nameFor("Stock Update", namespace);
+function _inventoryFormNameFor(namespace=""){
+    return nameFor("Inventory form", namespace);
 }
 
-function _createNewStockUpdateForm(namespace=""){
-    const form = FormApp.create(_stockUpdateFormNameFor(namespace));
-    form.setDescription("How many of each of these are in stock now?");
+function _createNewInventoryForm(workbook=null, namespace=""){
+    const form = FormApp.create(_inventoryFormNameFor(namespace));
+    form.setDescription("How many of each of these are in the inventory now?");
 
-    _populateStockUpdateForm(form, namespace);
+    _populateInventoryForm(form, workbook, namespace);
 
     return form;
 }
 
-function _populateStockUpdateForm(form, namespace){
+function _populateInventoryForm(form, workbook, namespace){
     const mustBeANonNegativeNumber = FormApp.createTextValidation()
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
     
-    const service = createProductService(namespace);
-    const productNames = service.getAllEntities().map(pt => pt.name);
+    const service = createItemService(workbook, namespace);
+    const itemNames = service.getAllEntities().map(pt => pt.name);
 
-    productNames.forEach(productName => {
+    itemNames.forEach(itemName => {
         form.addTextItem()
-            .setTitle(productName)
+            .setTitle(itemName)
             .setRequired(false)
             .setValidation(mustBeANonNegativeNumber);
     });
 }
 
-function _onStockUpdateFormSubmit(e){
+function _onInventoryFormSubmit(e){
     /*
     e.namedValues is formatted as
     {
@@ -74,31 +74,31 @@ function _onStockUpdateFormSubmit(e){
         fields.push({name: k, quantity: parseInt(v[v.length - 1])});
     }
 
-    const products = fields.filter(answerToQuestion => {
+    const items = fields.filter(answerToQuestion => {
         return !isNaN(answerToQuestion.quantity);
     }).filter(answerToQuestion => {
         return "Timestamp" !== answerToQuestion.name;
     }).map(answerToQuestion =>{
-        return new ProductType(answerToQuestion.name, answerToQuestion.quantity);
+        return new Item(answerToQuestion.name, answerToQuestion.quantity);
     });
 
-    console.log(JSON.stringify(products));
+    console.log(JSON.stringify(items));
 
-    createProductService().handleLogForm(products);
+    createItemService().handleLogForm(items);
 }
 
 
-function regenerateStockUpdateFormFor(workbook, namespace=""){
-    const name = _stockUpdateFormNameFor(namespace);
+function regenerateInventoryFormFor(workbook, namespace=""){
+    const name = _inventoryFormNameFor(namespace);
     const sheet = workbook.getSheetByName(name);
-    if(sheet === null){ // stock update form has not yet been generated
-        stockUpdateFormModule(workbook, namespace).setup();
+    if(sheet === null){ // inventory form has not yet been generated
+        inventoryFormModule(workbook, namespace).setup();
     } else {
         // remove all items, repopulate
         const formUrl = sheet.getFormUrl();
         const oldForm = FormApp.openByUrl(formUrl);
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
-        _populateStockUpdateForm(oldForm, namespace);
+        _populateInventoryForm(oldForm, workbook, namespace);
     }
-    createSettings(workbook, namespace).setStockUpdateFormStale(false);
+    createSettings(workbook, namespace).setInventoryFormStale(false);
 }

@@ -19,7 +19,7 @@ function _setupUserSheet(workbook, namespace){
     const userSheet = workbook.insertSheet(_userSheetNameFor(namespace));
     userSheet.setFrozenRows(1);
 
-    const headers = ["email", "wants log", "wants report"];
+    const headers = ["email", "wants log", "wants log reply", "wants report"];
     userSheet.appendRow(headers);
 
     const mustBeEmail = SpreadsheetApp.newDataValidation()
@@ -35,7 +35,7 @@ function _setupUserSheet(workbook, namespace){
         .setAllowInvalid(false)
         .setHelpText("must be either 'yes' or 'no', without quote marks")
         .build();
-    const boolCols = userSheet.getRange("B2:C");
+    const boolCols = userSheet.getRange("B2:D");
     boolCols.setDataValidation(mustBeYesOrNo);
 }
 
@@ -69,12 +69,14 @@ function _makeGoogleSheetsUserRepository(sheet){
         (user)=>[
             user.email, 
             (user.wantsLog) ? "yes" : "no", 
+            (user.wantsLogReply) ? "yes" : "no",
             (user.wantsReport) ? "yes" : "no"
         ],
         (row)=>new User(
             row[0],
             row[1] === "yes", // empty cells count as "no"
-            row[2] === "yes"
+            row[2] === "yes",
+            row[3] === "yes"
         )
     );
 }

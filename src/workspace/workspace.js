@@ -16,8 +16,6 @@
 
 const FORM_HANDLER_NAME = onFormSubmit.name;
 
-
-
 /*
 this does not automatically start handling forms, and is explicitly registered
 in _setupFormHandler
@@ -28,17 +26,60 @@ function onFormSubmit(e){
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
     */
-    if("Product name" in e.namedValues){
-        newProductTypeFormModule().receiveForm(e);
+    if("Item name" in e.namedValues){
+        newItemFormModule().receiveForm(e);
     } else if("Email" in e.namedValues){
         userFormModule().receiveForm(e);
+    } else if("Which item do you want to remove?" in e.namedValues) {
+        removeItemFormModule().receiveForm(e);
     } else {
-        stockUpdateFormModule().receiveForm(e);
+        inventoryFormModule().receiveForm(e);
     }    
 }
 
+/**
+ * Represents a virtual worksheet, which is the combination of a Google 
+ * Spreadsheet (the whole workbook, not just one sheet), as well as a namespace,
+ * which as prepended to sheet names. A workbook can contain multiple namespaces
+ */
+class Workspace {
+    
+    /**
+     * @param {SpreadsheetApp.Spreadsheet} workbook the Google Spreadsheet this
+     *  represents
+     * @param {string} namespace the namespace within the workbook this 
+     *  represents 
+     */
+    constructor(workbook, namespace) {
+        this.workbook = workbook;
+        this.namespace = namespace;
+    }
 
+    /**
+     * @returns {Workspace} the current workspace the app is executing in
+     */
+    static current() {
+        return new Workspace(SpreadsheetApp.getActiveSpreadsheet(), "");
+    }
 
+    /**
+     * @param {Workspace|null} other possibly another workspace
+     * @returns either the current workspace or the given workspace, if it is
+     *  not null
+     */
+    static currentOr(other=null) {
+        return (other === null) ? Workspace.current() : other;
+    }
+
+    /**
+     * Notifies this that the types of items in the inventory have changed, and
+     * thus various forms should be regenerated.
+     */
+    itemsChanged() {
+        createSettings(this.workbook, this.namespace).setInventoryFormStale(true);
+        regenerateRemoveItemFormFor();
+    }
+}
 
 /*
 Circumvents the Google script inheritance issue caused by unpredictable 
@@ -122,8 +163,9 @@ function allModulesFor(workbook=null, namespace=""){
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
-        newProductTypeFormModule(workbook, namespace),
-        stockUpdateFormModule(workbook, namespace)
+        newItemFormModule(workbook, namespace),
+        inventoryFormModule(workbook, namespace),
+        removeItemFormModule(workbook, namespace)
     ];
 }
 
@@ -221,7 +263,7 @@ function testWorkspaceModule(){
 
     testNameFor();
     testEmailModule();
-    testGoogleSheetsProductTypeRepository(workbook);
+    testGoogleSheetsItemRepository(workbook);
 
     /*
     only remove test sheets if tests are successful, as this allows us to

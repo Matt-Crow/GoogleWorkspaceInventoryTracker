@@ -1,31 +1,31 @@
 /**
- * This module is responsible for the Google Form used to add new product types
- * to the inventory.
+ * This module is responsible for the Google Form used to add new items to the 
+ * inventory.
  */
 
 
 
 /**
- * Use this to interface with the "New Product Type" form component of the 
+ * Use this to interface with the "New Item" form component of the 
  * system.
  * @param {SpreadsheetApp.Spreadsheet|null} workbook 
  * @param {string|undefined} namespace 
- * @returns the "New Product Type" form component of the application
+ * @returns the "New Item" form component of the application
  */
-function newProductTypeFormModule(workbook=null, namespace=""){
+function newItemFormModule(workbook=null, namespace=""){
     if(workbook === null){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
     return new Component(
         workbook,
         namespace,
-        _newProductTypeFormNameFor,
+        _newItemFormNameFor,
         (ns)=>{
-            const form = _createNewProductTypeForm(ns);
-            createSettings(workbook, namespace).setNewProductTypeForm(form);
+            const form = _createNewItemForm(ns);
+            createSettings(workbook, namespace).setNewItemForm(form);
             return form;
         },
-        _onNewProductTypeFormSubmit
+        _onNewItemFormSubmit
     );
 }
 
@@ -35,11 +35,11 @@ Private functions
 */
 
 
-function _newProductTypeFormNameFor(namespace=""){
-    return nameFor("New Product Type", namespace);
+function _newItemFormNameFor(namespace=""){
+    return nameFor("New item", namespace);
 }
 
-function _createNewProductTypeForm(namespace){
+function _createNewItemForm(namespace){
     /*
     Google Forms does not support number input fields, but uses text fields with
     number validators instead. There are two important points to consider when
@@ -56,25 +56,25 @@ function _createNewProductTypeForm(namespace){
         .requireNumberGreaterThan(0)
         .build();
     
-    const form = FormApp.create(_newProductTypeFormNameFor(namespace));
-    form.setDescription("Add a new product type to the inventory.");
+    const form = FormApp.create(_newItemFormNameFor(namespace));
+    form.setDescription("Add a new item to the inventory.");
 
     form.addTextItem()
-        .setTitle("Product name")
+        .setTitle("Item name")
         .setRequired(true);
 
     form.addTextItem()
-        .setTitle("How many are in stock now?")
+        .setTitle("How many are in the inventory now?")
         .setValidation(mustBeANonNegativeNumber);
     
     form.addTextItem()
-        .setTitle("How many do you want to keep in stock at all times?")
+        .setTitle("How many do you want to keep in the inventory at all times?")
         .setValidation(mustBeANonNegativeNumber);
 
     return form;
 }
 
-function _onNewProductTypeFormSubmit(event){
+function _onNewItemFormSubmit(event){
     const row = event.values;
     row.shift(); // remove first cell (timestamp)
     
@@ -82,13 +82,13 @@ function _onNewProductTypeFormSubmit(event){
     const quantity = parseInt(row[1]);
     const minimum = parseInt(row[2]);
 
-    const product = new ProductType(
+    const item = new Item(
         name,
         (isNaN(quantity)) ? undefined : quantity,
         (isNaN(minimum)) ? undefined : minimum
     );
-    console.log("New product: " + JSON.stringify(product));
+    console.log("New item: " + JSON.stringify(item));
 
-    createProductService().handleNewProduct(product);
-    createSettings().setStockUpdateFormStale(true);
+    createItemService().handleNewItem(item);
+    Workspace.current().itemsChanged();
 }

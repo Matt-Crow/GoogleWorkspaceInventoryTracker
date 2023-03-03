@@ -36,23 +36,26 @@ function _setupInventorySheet(workbook, namespace){
 
 /**
  * @param {string|undefined} namespace
- * @returns {ProductTypeService} an instance of ProductTypeService backed by a Google sheet as its
- *  repository
+ * @returns {ItemService} an instance of ItemService backed by a Google sheet as 
+ *  its repository
  */
-function createProductService(namespace=""){
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
+function createItemService(workbook=null, namespace=""){
+    if(workbook === null){
+        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    }
     const sheet = workbook.getSheetByName(_inventorySheetNameFor(namespace));
-    const repo = makeGoogleSheetsProductTypeRepository(sheet);
-    const service = new ProductTypeService(repo);
+    const repo = makeGoogleSheetsItemRepository(sheet);
+    const emails = createEmailService(workbook, namespace);
+    const service = new ItemService(repo, emails);
     return service;
 }
 
-function makeGoogleSheetsProductTypeRepository(sheet){
+function makeGoogleSheetsItemRepository(sheet){
     return new GoogleSheetsRepository(
         sheet,
-        (productType)=>productType.name,
-        (productType)=>[productType.name, productType.quantity, productType.minimum],
-        (row)=>new ProductType(
+        (item)=>item.name,
+        (item)=>[item.name, item.quantity, item.minimum],
+        (row)=>new Item(
             row[0], 
             (row[1] === "") ? undefined : row[1], // catch empty cells
             (row[2] === "") ? undefined : row[2]
@@ -62,10 +65,10 @@ function makeGoogleSheetsProductTypeRepository(sheet){
 
 
 
-function testGoogleSheetsProductTypeRepository(workbook){
+function testGoogleSheetsItemRepository(workbook){
     const sheet = workbook.getSheetByName(_inventorySheetNameFor("test"));
-    const sut = makeGoogleSheetsProductTypeRepository(sheet)
-    const expected = new ProductType("product");
+    const sut = makeGoogleSheetsItemRepository(sheet)
+    const expected = new Item("item");
 
     sut.addEntity(expected);
     assert(sut.hasEntityWithKey(expected.name));
