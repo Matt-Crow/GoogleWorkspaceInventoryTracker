@@ -45,6 +45,9 @@ function _populateRemoveItemForm(form, workbook=null, namespace="") {
 
     const service = createItemService(workbook, namespace);
     const itemNames = service.getAllEntities().map(item => item.name);
+    if (itemNames.length === 0) {
+        itemNames.push("---");
+    }
 
     const dropDown = form.addListItem();
     dropDown.setTitle("Which item do you want to remove?")
