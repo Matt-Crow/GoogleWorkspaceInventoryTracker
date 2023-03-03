@@ -49,9 +49,9 @@ class ReminderService {
         return this._scheduleReminder(reminder);
     }
 
-    scheduleInventoryReport(){
-        const interval = this._settings.getInventoryReportInterval();
-        const reminder = new Reminder("Inventory report", sendInventoryReport, interval);
+    scheduleRestockReminder(){
+        const interval = this._settings.getRestockReminderInterval();
+        const reminder = new Reminder("Restock reminder", sendRestockReminder, interval);
         return this._scheduleReminder(reminder);
     }
 

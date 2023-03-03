@@ -46,8 +46,8 @@ You can read more about the problem domain in the [Software Requirement Specific
 - `Set up`: creates any missing resources, such as sheets or forms
 - `Reset workspace`: **deletes all application data**, then performs setup
     - hint: you can rename a sheet to prevent it from being deleted by this
-- `Regenerate inventory form`: adds all items from the `inventory` sheet to the inventory form
-- `Test`: runs developer tests 
+- `Regenerate remove item form`: adds all items from the `inventory` sheet to the remove item form
+- `Tests`: runs developer tests 
 
 ## Using the application
 
@@ -61,12 +61,12 @@ You can read more about the problem domain in the [Software Requirement Specific
     You can either edit your preferences in the `users` sheet, 
     or you can use the `user` form by clicking the `User form URL` link on the `settings` sheet.
 - *How do I send out the inventory form email?*
-    You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Send inventory form`
-    or you can make it automatically send the email by setting the `inventory form interval` setting to a number, then going to the menu and selecting `G-WIT` => `Prime inventory form`
-- *How do I send out the inventory report email?*
-    You can make it automatically send the email by setting the `inventory report interval` in the `settings` sheet, then going to the menu and selecting `G-WIT` => `Inventory report` => `Prime inventory report`
+    You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Inventory form` => `Send inventory form`
+    or you can make it automatically send the email by setting the `Inventory form interval` setting to a number, then going to the menu and selecting `G-WIT` => `Inventory form` => `Prime inventory form`
+- *How do I send out the restock reminder?*
+    You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Restock reminder` =>`Send restock reminder` or you can make it automatically send the email by setting the `Restock reminder interval` in the `settings` sheet, then going to the menu and selecting `G-WIT` => `Restock reminder` => `Prime restock reminder`
 - *How do I make the application stop automatically sending emails?*
-    Go to the `settings` sheet, delete the value in the `inventory form interval` and `inventory report interval` cells, then go to the menu and select `G-WIT` => `Prime inventory form` as well as `G-WIT` => `Inventory report` => `Prime inventory report`
+    Go to the `settings` sheet, delete the value in the `Inventory form interval` and `Restock reminder interval` cells, then go to the menu and select `G-WIT` => `Inventory form` => `Prime inventory form` as well as `G-WIT` => `Restock reminder` => `Prime restock reminder`
 
 ## Known issues
 

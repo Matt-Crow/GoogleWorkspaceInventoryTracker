@@ -4,10 +4,10 @@
  */
 
 const KEYS = {
-    INVENTORY_FORM_INTERVAL: "inventory form interval",
-    INVENTORY_FORM_STALE: "inventory form is stale",
+    INVENTORY_FORM_INTERVAL: "Inventory form interval",
+    INVENTORY_FORM_STALE: "Inventory form is stale",
     INVENTORY_FORM_URL: "Inventory form URL",
-    INVENTORY_REPORT_INTERVAL: "inventory report interval",
+    RESTOCK_REMINDER_INTERVAL: "Restock reminder interval",
     NEW_ITEM_FORM_URL: "New item form URL",
     REMOVE_ITEM_FORM_URL: "Remove item form URL",
     USER_FORM_URL: "User form URL",
@@ -50,8 +50,8 @@ class Settings {
         return this.get(KEYS.INVENTORY_FORM_INTERVAL);
     }
 
-    getInventoryReportInterval() {
-        return this.get(KEYS.INVENTORY_REPORT_INTERVAL);
+    getRestockReminderInterval() {
+        return this.get(KEYS.RESTOCK_REMINDER_INTERVAL);
     }
 
     setInventoryFormStale(isStale){
@@ -115,7 +115,7 @@ class Setting {
 
 const DEFAULT_SETTINGS = [
     new Setting(KEYS.INVENTORY_FORM_INTERVAL, 7, "The number of days between sendings of the inventory form"),
-    new Setting(KEYS.INVENTORY_REPORT_INTERVAL, 7, "The number of days between sendings of the inventory report"),
+    new Setting(KEYS.RESTOCK_REMINDER_INTERVAL, 7, "The number of days between sendings of the restock reminder"),
     new Setting(KEYS.INVENTORY_FORM_STALE, "no", "'yes' when the system will regenerate the inventory form"),
     new Setting(KEYS.USER_FORM_URL, "", "Use this form to sign up for notifications or change your preferences"),
     new Setting(KEYS.INVENTORY_FORM_URL, "", "Use this form to update the inventory"),
