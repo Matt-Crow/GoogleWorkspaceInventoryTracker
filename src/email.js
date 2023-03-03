@@ -129,25 +129,6 @@ class EmailService {
 
         this._sendEmail(email);
     }
-
-    updateTrigger(){
-        const oldTriggers = ScriptApp.getProjectTriggers().filter(t => {
-            return t.getHandlerFunction() === sendInventoryForm.name;
-        });
-        oldTriggers.forEach(t => ScriptApp.deleteTrigger(t));
-
-        const interval = this._settings.getInventoryFormInterval();
-
-        let msg = "The inventory form will no longer be automatically sent.";
-        if(!isNaN(parseInt(interval))){
-            ScriptApp.newTrigger(sendInventoryForm.name)
-                .timeBased()
-                .everyDays(interval)
-                .create();
-            msg = `The inventory form will now be sent every ${interval} days.`;
-        }
-        return msg;
-    }
 }
 
 function testEmailModule(){

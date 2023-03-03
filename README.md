@@ -63,8 +63,10 @@ You can read more about the problem domain in the [Software Requirement Specific
 - *How do I send out the inventory form email?*
     You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Send inventory form`
     or you can make it automatically send the email by setting the `inventory form interval` setting to a number, then going to the menu and selecting `G-WIT` => `Prime inventory form`
+- *How do I send out the inventory report email?*
+    You can make it automatically send the email by setting the `inventory report interval` in the `settings` sheet, then going to the menu and selecting `G-WIT` => `Inventory report` => `Prime inventory report`
 - *How do I make the application stop automatically sending emails?*
-    Go to the `settings` sheet, delete the value in the `inventory form interval` cell, then go to the menu and select `G-WIT` => `Prime inventory form`
+    Go to the `settings` sheet, delete the value in the `inventory form interval` and `inventory report interval` cells, then go to the menu and select `G-WIT` => `Prime inventory form` as well as `G-WIT` => `Inventory report` => `Prime inventory report`
 
 ## Known issues
 

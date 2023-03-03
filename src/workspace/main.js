@@ -18,6 +18,9 @@ function onOpen(){
 		.addSubMenu(ui.createMenu("Restock reminder")
 			.addItem("Send restock reminder", sendRestockReminder.name)
 		)
+		.addSubMenu(ui.createMenu("Inventory report")
+			.addItem("Prime inventory report", primeInventoryReport.name)
+		)
 		.addItem("Run unit tests (fast)", "unitTests")
 		.addItem("Run integration tests (slow)", "integrationTests")
 		.addToUi();
@@ -52,12 +55,25 @@ function sendInventoryForm(){
     createEmailService().sendInventoryForm();
 }
 
-
-function primeInventoryForm(){
-    const msg = createEmailService().updateTrigger();
-    SpreadsheetApp.getUi().alert(msg);
+function sendInventoryReport() {
+	throw new Error("sendInventoryReport not implemented yet");
 }
 
+function primeInventoryForm(){
+	const reminder = createReminderService().scheduleInventoryForm();
+    const msg = (reminder.wasCreated)
+		? `The inventory form will now be sent every ${reminder.interval} days.`
+		: "The inventory form will no longer be automatically sent.";
+	SpreadsheetApp.getUi().alert(msg);
+}
+
+function primeInventoryReport() {
+	const reminder = createReminderService().scheduleInventoryReport();
+	const msg = (reminder.wasCreated)
+		? `The inventory report will now be sent every ${reminder.interval} days.`
+		: "The inventory report will no longer be automatically sent.";
+	SpreadsheetApp.getUi().alert(msg);
+}
 
 function sendRestockReminder(){
     const lowOnStock = createItemService().getItemsToRestock();
