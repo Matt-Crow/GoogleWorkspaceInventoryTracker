@@ -5,18 +5,15 @@
  * https://developers.google.com/apps-script/reference/mail
  */
 
- function createEmailService(workbook=null, namespace=""){
-    if(workbook===null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    
-    const users = createUserService(workbook, namespace);
+ function createEmailService(workspace=null){
+    workspace = Workspace.currentOr(workspace);   
+    const users = createUserService(workspace.workbook, workspace.namespace);
     const emailSender = (email)=>MailApp.sendEmail({ // convert my model to the
         to: email.to.join(","),                      // one MailApp uses
         subject: email.subject,
         htmlBody: email.bodyHtml
     });
-    const settings = createSettings(workbook, namespace);
-    const regenForm = ()=>regenerateInventoryFormFor(workbook, namespace);
+    const settings = createSettings(workspace.workbook, workspace.namespace);
+    const regenForm = ()=>regenerateInventoryFormFor(workspace.workbook, workspace.namespace);
     return new EmailService(users, emailSender, settings, regenForm);
 }

@@ -38,7 +38,7 @@ function _createRemoveItemForm(workspace) {
 }
 
 function _populateRemoveItemForm(form, workspace) {
-    const service = createItemService(workspace.workbook, workspace.namespace);
+    const service = createItemService(workspace);
     const itemNames = service.getAllEntities().map(item => item.name);
     if (itemNames.length === 0) {
         itemNames.push("---");

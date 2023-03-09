@@ -35,17 +35,16 @@ function _setupInventorySheet(workbook, namespace){
 }
 
 /**
- * @param {string|undefined} namespace
+ * @param {Workspace|undefined} workspace
  * @returns {ItemService} an instance of ItemService backed by a Google sheet as 
  *  its repository
  */
-function createItemService(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_inventorySheetNameFor(namespace));
+function createItemService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = makeGoogleSheetsItemRepository(sheet);
-    const emails = createEmailService(workbook, namespace);
+    const emails = createEmailService(workspace);
     const service = new ItemService(repo, emails);
     return service;
 }

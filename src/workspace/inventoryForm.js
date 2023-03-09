@@ -47,7 +47,7 @@ function _populateInventoryForm(form, workspace){
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
     
-    const service = createItemService(workspace.workbook, workspace.namespace);
+    const service = createItemService(workspace);
     const itemNames = service.getAllEntities().map(pt => pt.name);
 
     itemNames.forEach(itemName => {
