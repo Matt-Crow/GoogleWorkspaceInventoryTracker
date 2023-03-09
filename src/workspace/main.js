@@ -8,13 +8,13 @@
 function onOpen(){
 	const ui = SpreadsheetApp.getUi();
 	ui.createMenu("G-WIT")
-		.addItem("Set up", "setup")
-		.addItem("Reset workspace", "resetWorkspace")
+		.addItem("Set up", setup.name)
+		.addItem("Reset workspace", resetWorkspace.name)
 		.addItem("Regenerate remove item form", regenerateRemoveItemFormFor.name)
 		.addSubMenu(ui.createMenu("Inventory form")
 			.addItem("Prime inventory form", primeInventoryForm.name)
 			.addItem("Send inventory form", sendInventoryForm.name)
-			.addItem("Regenerate inventory form", regenerateInventoryForm.name)
+			.addItem("Regenerate inventory form", regenerateInventoryFormFor.name)
 		)
 		.addSubMenu(ui.createMenu("Restock reminder")
 			.addItem("Prime restock reminder", primeRestockReminder.name)
@@ -43,13 +43,6 @@ function resetWorkspace(){
 	const workbook = SpreadsheetApp.getActiveSpreadsheet();
 	deleteWorkspace(workbook);
 	setup();
-}
-
-/**
- * Repopulates the inventory form with the contents of the inventory sheet.
- */
-function regenerateInventoryForm(){
-	regenerateInventoryFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
 
 /**

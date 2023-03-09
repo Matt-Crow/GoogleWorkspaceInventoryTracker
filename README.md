@@ -67,6 +67,7 @@ You can read more about the problem domain in the [Software Requirement Specific
     You can send the email at any time by going to the Google Sheets menu, then selecting `G-WIT` => `Restock reminder` =>`Send restock reminder` or you can make it automatically send the email by setting the `Restock reminder interval` in the `settings` sheet, then going to the menu and selecting `G-WIT` => `Restock reminder` => `Prime restock reminder`
 - *How do I make the application stop automatically sending emails?*
     Go to the `settings` sheet, delete the value in the `Inventory form interval` and `Restock reminder interval` cells, then go to the menu and select `G-WIT` => `Inventory form` => `Prime inventory form` as well as `G-WIT` => `Restock reminder` => `Prime restock reminder`
+- *How do I check who submitted an update to the inventory?* You can view form responses by un-hiding the sheets for each form.
 
 ## Known issues
 

@@ -21,7 +21,11 @@ this does not automatically start handling forms, and is explicitly registered
 in _setupFormHandler
 */
 function onFormSubmit(e){
-    console.log("Received form submission: \n" + JSON.stringify(e));
+    console.log({
+        event: "Received Google form",
+        form: JSON.stringify(e)
+    });
+    
     /*
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
@@ -154,18 +158,23 @@ class Component {
     }
 }
 
+function getEmailAddressFrom(form) {
+    return form.namedValues["Email Address"].at(-1);
+}
+
 function allModulesFor(workbook=null, namespace=""){
     if(workbook === null){
         workbook = SpreadsheetApp.getActiveSpreadsheet();
     }
+    const workspace = new Workspace(workbook, namespace);
     return [
         settingSheetModule(workbook, namespace), // must be first
         inventorySheetModule(workbook, namespace),
         userSheetModule(workbook, namespace),
         userFormModule(workbook, namespace),
-        newItemFormModule(workbook, namespace),
+        newItemFormModule(workspace),
         inventoryFormModule(workbook, namespace),
-        removeItemFormModule(workbook, namespace)
+        removeItemFormModule(workspace)
     ];
 }
 

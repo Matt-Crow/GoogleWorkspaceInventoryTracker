@@ -3,18 +3,16 @@
  * from the inventory.
  */
 
-function removeItemFormModule(workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-
+function removeItemFormModule(workspace=null) {
+    workspace = Workspace.currentOr(workspace);
+    
     return new Component(
-        workbook,
-        namespace,
+        workspace.workbook,
+        workspace.namespace,
         _removeItemFormNameFor,
         (ns) => {
-            const form = _createRemoveItemForm(workbook, ns);
-            createSettings(workbook, ns).setRemoveItemForm(form);
+            const form = _createRemoveItemForm(workspace);
+            createSettings(workspace.workbook, ns).setRemoveItemForm(form);
             return form;
         },
         _onRemoveItemFormSubmit
@@ -29,21 +27,18 @@ function _removeItemFormNameFor(namespace="") {
     return nameFor("Remove item", namespace);
 }
 
-function _createRemoveItemForm(workbook, namespace) {
-    const form = FormApp.create(_removeItemFormNameFor(namespace));
+function _createRemoveItemForm(workspace) {
+    const form = FormApp.create(_removeItemFormNameFor(workspace.namespace));
     form.setDescription("Remove an existing item from the inventory.");
+    form.setCollectEmail(true);
 
-    _populateRemoveItemForm(form, workbook, namespace);
+    _populateRemoveItemForm(form, workspace);
     
     return form;
 }
 
-function _populateRemoveItemForm(form, workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-
-    const service = createItemService(workbook, namespace);
+function _populateRemoveItemForm(form, workspace) {
+    const service = createItemService(workspace.workbook, workspace.namespace);
     const itemNames = service.getAllEntities().map(item => item.name);
     if (itemNames.length === 0) {
         itemNames.push("---");
@@ -66,20 +61,17 @@ function _onRemoveItemFormSubmit(event) {
     Workspace.current().itemsChanged();
 }
 
-function regenerateRemoveItemFormFor(workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-
-    const name = _removeItemFormNameFor(namespace);
-    const sheet = workbook.getSheetByName(name);
+function regenerateRemoveItemFormFor(workspace=null) {
+    workspace = Workspace.currentOr(workspace);
+    const name = _removeItemFormNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     if (sheet === null) { // not generated yet
-        removeItemFormModule(workbook, namespace).setup();
+        removeItemFormModule(workspace).setup();
     } else {
         // remove old choices, repopulate
         const formUrl = sheet.getFormUrl();
         const form = FormApp.openByUrl(formUrl);
         form.getItems().forEach(item => form.deleteItem(item));
-        _populateRemoveItemForm(form, workbook, namespace);
+        _populateRemoveItemForm(form, workspace);
     }
 }
