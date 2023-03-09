@@ -5,12 +5,12 @@
 
 
 
-function userSheetModule(workbook, namespace){
+function userSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _userSheetNameFor,
-        (ns)=>_setupUserSheet(workbook, ns)
+        (ns)=>_setupUserSheet(workspace.workbook, ns)
     );
 }
 

@@ -16,8 +16,7 @@ function newItemFormModule(workspace=null){
     workspace = Workspace.currentOr(workspace);
 
     return new Component(
-        workspace.workbook,
-        workspace.namespace,
+        workspace,
         _newItemFormNameFor,
         (ns)=>{
             const form = _createNewItemForm(ns);

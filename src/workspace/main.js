@@ -31,8 +31,7 @@ function onOpen(){
  * mutates the current Google Sheet into a suitable environment for the program
  */
 function setup(){
-	const workbook = SpreadsheetApp.getActiveSpreadsheet();
-	setupWorkspace(workbook);
+	setupWorkspace();
 	SpreadsheetApp.getUi().alert("Setup complete!");
 }
 
@@ -40,8 +39,7 @@ function setup(){
  * Removes all the auto-generated sheets & triggers used by this app.
  */
 function resetWorkspace(){
-	const workbook = SpreadsheetApp.getActiveSpreadsheet();
-	deleteWorkspace(workbook);
+	deleteWorkspace();
 	setup();
 }
 

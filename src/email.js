@@ -123,7 +123,7 @@ class EmailService {
 
         const email = new Email(
             to,
-            "Restock Reminder",
+            "What we need to get",
             lines.join("\n")
         );
 

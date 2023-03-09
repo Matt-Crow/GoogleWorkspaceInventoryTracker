@@ -7,8 +7,7 @@ function removeItemFormModule(workspace=null) {
     workspace = Workspace.currentOr(workspace);
     
     return new Component(
-        workspace.workbook,
-        workspace.namespace,
+        workspace,
         _removeItemFormNameFor,
         (ns) => {
             const form = _createRemoveItemForm(workspace);

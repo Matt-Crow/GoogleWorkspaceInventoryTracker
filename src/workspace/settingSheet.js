@@ -4,12 +4,12 @@
 
 
 
-function settingSheetModule(workbook, namespace){
+function settingSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _settingSheetNameFor,
-        (ns)=>_setupSettingSheet(workbook, ns)
+        (ns)=>_setupSettingSheet(workspace.workbook, ns)
     );
 }
 

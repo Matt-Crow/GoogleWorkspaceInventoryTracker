@@ -92,27 +92,25 @@ even when used in the same file as the superclass.
 */
 class Component {
     /**
-     * @param {SpreadsheetApp.Spreadsheet} workbook 
-     * @param {string} namespace 
+     * @param {Workspace} workspace the workspace this component exists in
      * @param {(string)=>string} namespaceToName
      * @param {(string)=>Form|null|undefined} create
      * @param {(FormEvent)=>void} onSubmit 
      */
-    constructor(workbook, namespace, namespaceToName, create, onSubmit){
-        this.workbook = workbook;
-        this.namespace = namespace;
-        this.name = namespaceToName(namespace);
+    constructor(workspace, namespaceToName, create, onSubmit){
+        this.workspace = workspace;
+        this.name = namespaceToName(workspace.namespace);
         this.create = create;
         this.onSubmit = onSubmit;
     }
 
     setup(){
         // does not bind 'this' context with just "this._doSetup" 
-        ifSheetDoesNotExist(this.workbook, this.name, ()=>this._doSetup());
+        ifSheetDoesNotExist(this.workspace.workbook, this.name, ()=>this._doSetup());
     }
 
     _doSetup(){
-        const formOrMaybeNot = this.create(this.namespace); // NOT this.name
+        const formOrMaybeNot = this.create(this.workspace.namespace); // NOT this.name
         if(formOrMaybeNot && formOrMaybeNot.setDestination){
             this._doSetupForm(formOrMaybeNot);
         }
@@ -121,7 +119,7 @@ class Component {
     _doSetupForm(form){
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
-            this.workbook.getId()
+            this.workspace.workbook.getId()
         );
 
         /*
@@ -139,7 +137,7 @@ class Component {
         // rename the sheet created by setDestination so it's easier to find
         // this URL solution doesn't work: https://stackoverflow.com/a/51484165
         const formId = form.getId();
-        const createdSheet = this.workbook.getSheets().filter(sheet => {
+        const createdSheet = this.workspace.workbook.getSheets().filter(sheet => {
             return null !== sheet.getFormUrl();
         }).find(sheet => {
             const form = FormApp.openByUrl(sheet.getFormUrl());
@@ -150,7 +148,7 @@ class Component {
     }
 
     delete(){
-        deleteSheet(this.workbook, this.name);
+        deleteSheet(this.workspace.workbook, this.name);
     }
 
     receiveForm(event){
@@ -162,18 +160,15 @@ function getEmailAddressFrom(form) {
     return form.namedValues["Email Address"].at(-1);
 }
 
-function allModulesFor(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const workspace = new Workspace(workbook, namespace);
+function allModulesFor(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return [
-        settingSheetModule(workbook, namespace), // must be first
-        inventorySheetModule(workbook, namespace),
-        userSheetModule(workbook, namespace),
-        userFormModule(workbook, namespace),
+        settingSheetModule(workspace), // must be first
+        inventorySheetModule(workspace),
+        userSheetModule(workspace),
+        userFormModule(workspace),
         newItemFormModule(workspace),
-        inventoryFormModule(workbook, namespace),
+        inventoryFormModule(workspace),
         removeItemFormModule(workspace)
     ];
 }
@@ -181,12 +176,12 @@ function allModulesFor(workbook=null, namespace=""){
 
 /**
  * Mutates the given workbook into a suitable environment for the application.
- * @param {SpreadsheetApp.Spreadsheet} workbook 
- * @param {string|undefined} namespace - can specify for testing
+ * @param {Workspace|undefined} workspace the environment to mutate
  */
-function setupWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.setup());
-    _setupFormHandler(workbook);
+function setupWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.setup());
+    _setupFormHandler(workspace.workbook);
 }
 
 function _setupFormHandler(workbook){
@@ -200,9 +195,10 @@ function _setupFormHandler(workbook){
     }
 }
 
-function deleteWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.delete());
-    if("" === namespace){
+function deleteWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.delete());
+    if("" === workspace.namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
             return t.getHandlerFunction() === FORM_HANDLER_NAME;
@@ -266,19 +262,22 @@ Unit tests
 */
 
 function testWorkspaceModule(){
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    deleteWorkspace(workbook, "test");
-    setupWorkspace(workbook, "test");
+    const workspace = new Workspace(
+        SpreadsheetApp.getActiveSpreadsheet(),
+        "test"
+    );
+    deleteWorkspace(workspace);
+    setupWorkspace(workspace);
 
     testNameFor();
     testEmailModule();
-    testGoogleSheetsItemRepository(workbook);
+    testGoogleSheetsItemRepository(workspace.workbook);
 
     /*
     only remove test sheets if tests are successful, as this allows us to
     diagnose errors if one of these tests fails
     */
-    deleteWorkspace(workbook, "test");
+    deleteWorkspace(workspace);
 }
 
 function testNameFor(){

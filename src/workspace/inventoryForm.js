@@ -5,22 +5,17 @@
 
 /**
  * Use this to interface with the Inventory form component of the system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook 
- * @param {string|undefined} namespace 
+ * @param {Workspace|undefined} workspace the workspace to get the component of 
  * @returns the Inventory form component of the application
  */
-function inventoryFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function inventoryFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _inventoryFormNameFor,
         (ns)=>{
-            const workspace = new Workspace(workbook, ns);
             const form = _createNewInventoryForm(workspace);
-            createSettings(workbook, namespace).setInventoryForm(form);
+            createSettings(workspace.workbook, workspace.namespace).setInventoryForm(form);
             return form;
         },
         _onInventoryFormSubmit
@@ -107,7 +102,7 @@ function regenerateInventoryFormFor(workspace=null){
     const name = _inventoryFormNameFor(workspace.namespace);
     const sheet = workspace.workbook.getSheetByName(name);
     if(sheet === null){ // inventory form has not yet been generated
-        inventoryFormModule(workspace.workbook, workspace.namespace).setup();
+        inventoryFormModule(workspace).setup();
     } else {
         // remove all items, repopulate
         const formUrl = sheet.getFormUrl();

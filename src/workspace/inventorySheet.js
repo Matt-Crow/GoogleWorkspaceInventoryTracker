@@ -5,12 +5,12 @@
 
 
 
- function inventorySheetModule(workbook, namespace){
+function inventorySheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook, 
-        namespace, 
+        workspace, 
         _inventorySheetNameFor,
-        (ns)=>_setupInventorySheet(workbook, ns)
+        (ns)=>_setupInventorySheet(workspace.workbook, ns)
     );
 }
 
