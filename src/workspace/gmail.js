@@ -7,13 +7,13 @@
 
  function createEmailService(workspace=null){
     workspace = Workspace.currentOr(workspace);   
-    const users = createUserService(workspace.workbook, workspace.namespace);
+    const users = createUserService(workspace);
     const emailSender = (email)=>MailApp.sendEmail({ // convert my model to the
         to: email.to.join(","),                      // one MailApp uses
         subject: email.subject,
         htmlBody: email.bodyHtml
     });
-    const settings = createSettings(workspace.workbook, workspace.namespace);
-    const regenForm = ()=>regenerateInventoryFormFor(workspace.workbook, workspace.namespace);
+    const settings = createSettings(workspace);
+    const regenForm = ()=>regenerateInventoryFormFor(workspace);
     return new EmailService(users, emailSender, settings, regenForm);
 }

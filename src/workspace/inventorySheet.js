@@ -10,7 +10,7 @@ function inventorySheetModule(workspace=null){
     return new Component(
         workspace, 
         _inventorySheetNameFor,
-        (ns)=>_setupInventorySheet(workspace.workbook, ns)
+        ()=>_setupInventorySheet(workspace) // not just _setupInventorySheet
     );
 }
 
@@ -18,8 +18,9 @@ function _inventorySheetNameFor(namespace){
     return nameFor("inventory", namespace);
 }
 
-function _setupInventorySheet(workbook, namespace){
-    const inventorySheet = workbook.insertSheet(_inventorySheetNameFor(namespace));
+function _setupInventorySheet(workspace){
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const inventorySheet = workspace.workbook.insertSheet(name);
     inventorySheet.setFrozenRows(1);
 
     const validation = SpreadsheetApp.newDataValidation()

@@ -13,9 +13,9 @@ function inventoryFormModule(workspace=null){
     return new Component(
         workspace,
         _inventoryFormNameFor,
-        (ns)=>{
+        ()=>{
             const form = _createNewInventoryForm(workspace);
-            createSettings(workspace.workbook, workspace.namespace).setInventoryForm(form);
+            createSettings(workspace).setInventoryForm(form);
             return form;
         },
         _onInventoryFormSubmit
@@ -110,5 +110,5 @@ function regenerateInventoryFormFor(workspace=null){
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
         _populateInventoryForm(oldForm, workspace);
     }
-    createSettings(workspace.workbook, workspace.namespace).setInventoryFormStale(false);
+    createSettings(workspace).setInventoryFormStale(false);
 }

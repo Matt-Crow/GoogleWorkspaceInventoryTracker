@@ -9,9 +9,9 @@ function removeItemFormModule(workspace=null) {
     return new Component(
         workspace,
         _removeItemFormNameFor,
-        (ns) => {
+        () => {
             const form = _createRemoveItemForm(workspace);
-            createSettings(workspace.workbook, ns).setRemoveItemForm(form);
+            createSettings(workspace).setRemoveItemForm(form);
             return form;
         },
         _onRemoveItemFormSubmit

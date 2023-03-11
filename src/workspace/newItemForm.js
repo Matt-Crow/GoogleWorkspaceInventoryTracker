@@ -8,8 +8,8 @@
 /**
  * Use this to interface with the "New Item" form component of the 
  * system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook 
- * @param {string|undefined} namespace 
+ * @param {Workspace|undefined} workspace the workspace to interface
+ *  with 
  * @returns the "New Item" form component of the application
  */
 function newItemFormModule(workspace=null){
@@ -18,9 +18,9 @@ function newItemFormModule(workspace=null){
     return new Component(
         workspace,
         _newItemFormNameFor,
-        (ns)=>{
-            const form = _createNewItemForm(ns);
-            createSettings(workspace.workbook, workspace.namespace).setNewItemForm(form);
+        ()=>{
+            const form = _createNewItemForm(workspace.namespace);
+            createSettings(workspace).setNewItemForm(form);
             return form;
         },
         _onNewItemFormSubmit

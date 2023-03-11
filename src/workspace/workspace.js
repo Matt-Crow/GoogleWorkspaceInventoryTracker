@@ -80,7 +80,7 @@ class Workspace {
      * thus various forms should be regenerated.
      */
     itemsChanged() {
-        createSettings(this.workbook, this.namespace).setInventoryFormStale(true);
+        createSettings(this).setInventoryFormStale(true);
         regenerateRemoveItemFormFor();
     }
 }
@@ -93,9 +93,11 @@ even when used in the same file as the superclass.
 class Component {
     /**
      * @param {Workspace} workspace the workspace this component exists in
-     * @param {(string)=>string} namespaceToName
-     * @param {(string)=>Form|null|undefined} create
-     * @param {(FormEvent)=>void} onSubmit 
+     * @param {(string)=>string} namespaceToName maps the namespace to the name
+     *  of the sheet for this component in that namespace
+     * @param {()=>Form|null|undefined} create creates this sheet if it doesn't
+     *  exist. It should return the form if one was created.
+     * @param {(FormEvent)=>void} onSubmit handles form submissions.
      */
     constructor(workspace, namespaceToName, create, onSubmit){
         this.workspace = workspace;
@@ -110,7 +112,7 @@ class Component {
     }
 
     _doSetup(){
-        const formOrMaybeNot = this.create(this.workspace.namespace); // NOT this.name
+        const formOrMaybeNot = this.create();
         if(formOrMaybeNot && formOrMaybeNot.setDestination){
             this._doSetupForm(formOrMaybeNot);
         }

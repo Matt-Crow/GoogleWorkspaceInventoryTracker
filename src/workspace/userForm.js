@@ -10,10 +10,9 @@ function userFormModule(workspace=null){
     return new Component(
         workspace,
         _userFormNameFor,
-        (ns)=>{
-            const form = _createUserForm(ns);
-            createSettings(workspace.workbook, workspace.namespace)
-                .setUserForm(form);
+        ()=>{
+            const form = _createUserForm(workspace.namespace);
+            createSettings(workspace).setUserForm(form);
             return form;
         },
         _onUserFormSubmit
