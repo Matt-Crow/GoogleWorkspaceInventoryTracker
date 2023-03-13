@@ -96,31 +96,40 @@ class GoogleSheetsRepository {
     }
 
     addEntity(entity){
-        const key = this._getKey(entity);
+        const key = this.formatKey(this._getKey(entity));
         if(this.hasEntityWithKey(key)){
             throw new Error(`Duplicate key: ${key}`);
         }
         this._sheet.appendRow(this._toRow(entity));
     }
 
+    formatKey(key) {
+        return key.toLowerCase();
+    }
+
     hasEntityWithKey(key){
-        return this._getAllKeys().includes(key);
+        return this._getAllKeys().includes(this.formatKey(key));
     }
 
     /**
      * @returns {string[]} all the keys in the sheet, sorted by row
      */
     _getAllKeys() {
-        return this._sheet.getRange("A2:A").getValues().map(row=>row[0]);
+        return this._sheet
+            .getRange("A2:A")
+            .getValues()
+            .map(row=>row[0])
+            .map(cell=>this.formatKey(cell));
     }
 
     getEntityByKey(key){
+        key = this.formatKey(key);
         if(!this.hasEntityWithKey(key)){
             throw new Error(`No entity with key: ${key}`);
         }
         const rows = this._sheet.getDataRange().getValues();
         rows.shift(); // remove header
-        const idx = rows.findIndex(row => row[0] === key);
+        const idx = rows.findIndex(row => this.formatKey(row[0]) === key);
         return this._toEntity(rows[idx]);
     }
 
@@ -131,20 +140,21 @@ class GoogleSheetsRepository {
     }
 
     update(entity){
-        const key = this._getKey(entity);
+        const key = this.formatKey(this._getKey(entity));
         if(!this.hasEntityWithKey(key)){
             throw new Error(`No entity with key, so cannot update: ${key}`);
         }
         const rows = this._sheet.getDataRange().getValues();
         rows.shift();
-        const idx = rows.findIndex(row=>row[0] === key);
+        const idx = rows.findIndex(row=>this.formatKey(row[0]) === key);
         const newRow = this._toRow(entity);
         //                      translate from 0 to 1 idx, +1 for header
         this._sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
     }
 
     deleteEntityWithKey(key) {
-        const arrayIdx = this._getAllKeys().findIndex((element) => element === key);
+        key = this.formatKey(key);
+        const arrayIdx = this._getAllKeys().findIndex((element) => this.formatKey(element) === key);
         if (arrayIdx != -1) { // entity with that key exists
             // +1 since deleteRow is 1-indexed, +1 again for header
             const rowIdx = arrayIdx + 2;

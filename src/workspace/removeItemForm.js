@@ -54,10 +54,18 @@ function _onRemoveItemFormSubmit(event) {
      * appended after the timestamp. The last value in the array is the one we
      * want, so grab that one.
      */
-    const name = event.values.at(-1);
+    const name = lastNonEmpty(event.values);
+    console.log({
+        event: `Received remove item form from ${getEmailAddressFrom(event)}`,
+        itemName: name 
+    });
 
-    createItemService().remove(name);
-    Workspace.current().itemsChanged();
+    if (name) {
+        createItemService().remove(name);
+        Workspace.current().itemsChanged();
+    } else {
+        console.log("Name is falsey, so nothing to remove.");
+    }
 }
 
 function regenerateRemoveItemFormFor(workspace=null) {

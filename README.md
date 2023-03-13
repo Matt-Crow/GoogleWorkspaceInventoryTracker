@@ -79,6 +79,10 @@ You can read more about the problem domain in the [Software Requirement Specific
 - *I just added an item to the inventory, but it isn't showing up in the inventory form.*
     The program only changes the inventory form whenever it sends it, so the new item will show up the next time it sends.
 
+- *Other users can't access the forms* - since the system creates these forms in
+    the root of your Google Drive, you'll need to either share them or move them
+    to a shared folder to give others access.
+
 ## Helpful Links
 
 - [clasp](https://developers.google.com/apps-script/guides/clasp)

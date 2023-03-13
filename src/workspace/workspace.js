@@ -162,6 +162,15 @@ function getEmailAddressFrom(form) {
     return form.namedValues["Email Address"].at(-1);
 }
 
+/**
+ * Needed because of how Google Forms responses are formatted.
+ * @param {String[]} array the array to find the last non-empty string in
+ * @returns the last non-empty string in the given array
+ */
+function lastNonEmpty(array) {
+    return array.findLast(e => e !== "");
+}
+
 function allModulesFor(workspace=null){
     workspace = Workspace.currentOr(workspace);
     return [
