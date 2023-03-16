@@ -5,21 +5,17 @@
 
 /**
  * Use this to interface with the Inventory form component of the system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook 
- * @param {string|undefined} namespace 
+ * @param {Workspace|undefined} workspace the workspace to get the component of 
  * @returns the Inventory form component of the application
  */
-function inventoryFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function inventoryFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _inventoryFormNameFor,
-        (ns)=>{
-            const form = _createNewInventoryForm(workbook, ns);
-            createSettings(workbook, namespace).setInventoryForm(form);
+        ()=>{
+            const form = _createNewInventoryForm(workspace);
+            createSettings(workspace).setInventoryForm(form);
             return form;
         },
         _onInventoryFormSubmit
@@ -30,22 +26,23 @@ function _inventoryFormNameFor(namespace=""){
     return nameFor("Inventory form", namespace);
 }
 
-function _createNewInventoryForm(workbook=null, namespace=""){
-    const form = FormApp.create(_inventoryFormNameFor(namespace));
+function _createNewInventoryForm(workspace){
+    const form = FormApp.create(_inventoryFormNameFor(workspace.namespace));
     form.setDescription("How many of each of these are in the inventory now?");
-
-    _populateInventoryForm(form, workbook, namespace);
+    form.setCollectEmail(true);
+    
+    _populateInventoryForm(form, workspace);
 
     return form;
 }
 
-function _populateInventoryForm(form, workbook, namespace){
+function _populateInventoryForm(form, workspace){
     const mustBeANonNegativeNumber = FormApp.createTextValidation()
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
     
-    const service = createItemService(workbook, namespace);
+    const service = createItemService(workspace);
     const itemNames = service.getAllEntities().map(pt => pt.name);
 
     itemNames.forEach(itemName => {
@@ -71,34 +68,47 @@ function _onInventoryFormSubmit(e){
     const fields = [];
     for(let [k, v] of Object.entries(e.namedValues)){
         //                                       last item
-        fields.push({name: k, quantity: parseInt(v[v.length - 1])});
+        fields.push({name: k, quantity: parseInt(v.at(-1))});
     }
 
     const items = fields.filter(answerToQuestion => {
         return !isNaN(answerToQuestion.quantity);
     }).filter(answerToQuestion => {
         return "Timestamp" !== answerToQuestion.name;
+    }).filter(answerToQuestion => {
+        return "Email Address" !== answerToQuestion.name;
     }).map(answerToQuestion =>{
         return new Item(answerToQuestion.name, answerToQuestion.quantity);
     });
 
-    console.log(JSON.stringify(items));
+    const email = getEmailAddressFrom(e);
+    console.log({
+        event: `Received inventory form from ${email}`,
+        items: items
+    });
 
     createItemService().handleLogForm(items);
 }
 
-
-function regenerateInventoryFormFor(workbook, namespace=""){
-    const name = _inventoryFormNameFor(namespace);
-    const sheet = workbook.getSheetByName(name);
+/**
+ * Regenerates the inventory form by populating it with the current contents of
+ * the inventory sheet.
+ * 
+ * @param {Workspace} workspace the workspace to regenerate the inventory form
+ *  for.
+ */
+function regenerateInventoryFormFor(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _inventoryFormNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     if(sheet === null){ // inventory form has not yet been generated
-        inventoryFormModule(workbook, namespace).setup();
+        inventoryFormModule(workspace).setup();
     } else {
         // remove all items, repopulate
         const formUrl = sheet.getFormUrl();
         const oldForm = FormApp.openByUrl(formUrl);
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
-        _populateInventoryForm(oldForm, workbook, namespace);
+        _populateInventoryForm(oldForm, workspace);
     }
-    createSettings(workbook, namespace).setInventoryFormStale(false);
+    createSettings(workspace).setInventoryFormStale(false);
 }

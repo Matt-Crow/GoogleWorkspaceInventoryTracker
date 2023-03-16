@@ -5,17 +5,14 @@
 
 
 
-function userFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function userFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _userFormNameFor,
-        (ns)=>{
-            const form = _createUserForm(ns);
-            createSettings(workbook, namespace).setUserForm(form);
+        ()=>{
+            const form = _createUserForm(workspace.namespace);
+            createSettings(workspace).setUserForm(form);
             return form;
         },
         _onUserFormSubmit

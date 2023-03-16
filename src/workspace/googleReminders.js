@@ -1,9 +1,9 @@
 
 
 function createReminderService(workspace=null) {
-    const ws = Workspace.currentOr(workspace);
+    workspace = Workspace.currentOr(workspace);
     return new ReminderService(
-        createSettings(ws.workbook, ws.namespace),
+        createSettings(workspace),
         _createGoogleReminder,
         _deleteGoogleReminder
     );

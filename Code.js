@@ -108,7 +108,7 @@ class EmailService {
         lines.push(`<p>You can opt out of receiving this email here: ${userUrl}</p>`);
         const email = new Email(
             to,
-            "Restock Reminder",
+            "What we need to get",
             lines.join("\n")
         );
         this._sendEmail(email);
@@ -232,12 +232,12 @@ class ItemService {
         return this.repository.getAllEntities();
     }
     /**
-     * @returns {Item[]} the items that are below their minimum quantities.
+     * @returns {Item[]} the items that are at or below their minimum quantities
      */
     getItemsToRestock(){
         return this.repository
             .getAllEntities()
-            .filter(item => item.quantity < item.minimum)
+            .filter(item => item.quantity <= item.minimum)
             .map(item => item.copy());
     }
     /**
@@ -358,11 +358,17 @@ function testItemService(){
 function testGetItemsToRestock(){
     const itemComparator = (a, b) => a.dataEquals(b);
     const expected = new Item("foo", 3, 4);
-    const notExpected = new Item("bar", 4, 3);
-    const repo = makeInMemoryItemRepository([expected, notExpected]);
+    const minimumEqualQuantity = new Item("bar", 3, 3);
+    const notExpected = new Item("baz", 4, 3);
+    const repo = makeInMemoryItemRepository([
+        expected,
+        minimumEqualQuantity,
+        notExpected
+    ]);
     const sut = new ItemService(repo, {});
     const actual = sut.getItemsToRestock();
     assertContains(expected, actual, itemComparator);
+    assertContains(minimumEqualQuantity, actual, itemComparator);
     assertDoesNotContain(notExpected, actual, itemComparator);
 }
 function testRemoveItems() {
@@ -458,28 +464,36 @@ class GoogleSheetsRepository {
         this._toEntity = toEntity;
     }
     addEntity(entity){
-        const key = this._getKey(entity);
+        const key = this.formatKey(this._getKey(entity));
         if(this.hasEntityWithKey(key)){
             throw new Error(`Duplicate key: ${key}`);
         }
         this._sheet.appendRow(this._toRow(entity));
     }
+    formatKey(key) {
+        return key.toLowerCase();
+    }
     hasEntityWithKey(key){
-        return this._getAllKeys().includes(key);
+        return this._getAllKeys().includes(this.formatKey(key));
     }
     /**
      * @returns {string[]} all the keys in the sheet, sorted by row
      */
     _getAllKeys() {
-        return this._sheet.getRange("A2:A").getValues().map(row=>row[0]);
+        return this._sheet
+            .getRange("A2:A")
+            .getValues()
+            .map(row=>row[0])
+            .map(cell=>this.formatKey(cell));
     }
     getEntityByKey(key){
+        key = this.formatKey(key);
         if(!this.hasEntityWithKey(key)){
             throw new Error(`No entity with key: ${key}`);
         }
         const rows = this._sheet.getDataRange().getValues();
         rows.shift(); // remove header
-        const idx = rows.findIndex(row => row[0] === key);
+        const idx = rows.findIndex(row => this.formatKey(row[0]) === key);
         return this._toEntity(rows[idx]);
     }
     getAllEntities(){
@@ -488,19 +502,20 @@ class GoogleSheetsRepository {
         return rows.map(row=>this._toEntity(row));
     }
     update(entity){
-        const key = this._getKey(entity);
+        const key = this.formatKey(this._getKey(entity));
         if(!this.hasEntityWithKey(key)){
             throw new Error(`No entity with key, so cannot update: ${key}`);
         }
         const rows = this._sheet.getDataRange().getValues();
         rows.shift();
-        const idx = rows.findIndex(row=>row[0] === key);
+        const idx = rows.findIndex(row=>this.formatKey(row[0]) === key);
         const newRow = this._toRow(entity);
         //                      translate from 0 to 1 idx, +1 for header
         this._sheet.getRange(idx + 2, 1, 1, newRow.length).setValues([newRow]);
     }
     deleteEntityWithKey(key) {
-        const arrayIdx = this._getAllKeys().findIndex((element) => element === key);
+        key = this.formatKey(key);
+        const arrayIdx = this._getAllKeys().findIndex((element) => this.formatKey(element) === key);
         if (arrayIdx != -1) { // entity with that key exists
             // +1 since deleteRow is 1-indexed, +1 again for header
             const rowIdx = arrayIdx + 2;
@@ -849,25 +864,23 @@ function mustHaveValue(obj){
  *
  * https://developers.google.com/apps-script/reference/mail
  */
- function createEmailService(workbook=null, namespace=""){
-    if(workbook===null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const users = createUserService(workbook, namespace);
+ function createEmailService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const users = createUserService(workspace);
     const emailSender = (email)=>MailApp.sendEmail({ // convert my model to the
         to: email.to.join(","),                      // one MailApp uses
         subject: email.subject,
         htmlBody: email.bodyHtml
     });
-    const settings = createSettings(workbook, namespace);
-    const regenForm = ()=>regenerateInventoryFormFor(workbook, namespace);
+    const settings = createSettings(workspace);
+    const regenForm = ()=>regenerateInventoryFormFor(workspace);
     return new EmailService(users, emailSender, settings, regenForm);
 }
 // glob of googleReminders
 function createReminderService(workspace=null) {
-    const ws = Workspace.currentOr(workspace);
+    workspace = Workspace.currentOr(workspace);
     return new ReminderService(
-        createSettings(ws.workbook, ws.namespace),
+        createSettings(workspace),
         _createGoogleReminder,
         _deleteGoogleReminder
     );
@@ -891,21 +904,17 @@ function _deleteGoogleReminder(reminder) {
  */
 /**
  * Use this to interface with the Inventory form component of the system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook
- * @param {string|undefined} namespace
+ * @param {Workspace|undefined} workspace the workspace to get the component of
  * @returns the Inventory form component of the application
  */
-function inventoryFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function inventoryFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _inventoryFormNameFor,
-        (ns)=>{
-            const form = _createNewInventoryForm(workbook, ns);
-            createSettings(workbook, namespace).setInventoryForm(form);
+        ()=>{
+            const form = _createNewInventoryForm(workspace);
+            createSettings(workspace).setInventoryForm(form);
             return form;
         },
         _onInventoryFormSubmit
@@ -914,18 +923,19 @@ function inventoryFormModule(workbook=null, namespace=""){
 function _inventoryFormNameFor(namespace=""){
     return nameFor("Inventory form", namespace);
 }
-function _createNewInventoryForm(workbook=null, namespace=""){
-    const form = FormApp.create(_inventoryFormNameFor(namespace));
+function _createNewInventoryForm(workspace){
+    const form = FormApp.create(_inventoryFormNameFor(workspace.namespace));
     form.setDescription("How many of each of these are in the inventory now?");
-    _populateInventoryForm(form, workbook, namespace);
+    form.setCollectEmail(true);
+    _populateInventoryForm(form, workspace);
     return form;
 }
-function _populateInventoryForm(form, workbook, namespace){
+function _populateInventoryForm(form, workspace){
     const mustBeANonNegativeNumber = FormApp.createTextValidation()
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
-    const service = createItemService(workbook, namespace);
+    const service = createItemService(workspace);
     const itemNames = service.getAllEntities().map(pt => pt.name);
     itemNames.forEach(itemName => {
         form.addTextItem()
@@ -948,50 +958,65 @@ function _onInventoryFormSubmit(e){
     const fields = [];
     for(let [k, v] of Object.entries(e.namedValues)){
         //                                       last item
-        fields.push({name: k, quantity: parseInt(v[v.length - 1])});
+        fields.push({name: k, quantity: parseInt(v.at(-1))});
     }
     const items = fields.filter(answerToQuestion => {
         return !isNaN(answerToQuestion.quantity);
     }).filter(answerToQuestion => {
         return "Timestamp" !== answerToQuestion.name;
+    }).filter(answerToQuestion => {
+        return "Email Address" !== answerToQuestion.name;
     }).map(answerToQuestion =>{
         return new Item(answerToQuestion.name, answerToQuestion.quantity);
     });
-    console.log(JSON.stringify(items));
+    const email = getEmailAddressFrom(e);
+    console.log({
+        event: `Received inventory form from ${email}`,
+        items: items
+    });
     createItemService().handleLogForm(items);
 }
-function regenerateInventoryFormFor(workbook, namespace=""){
-    const name = _inventoryFormNameFor(namespace);
-    const sheet = workbook.getSheetByName(name);
+/**
+ * Regenerates the inventory form by populating it with the current contents of
+ * the inventory sheet.
+ *
+ * @param {Workspace} workspace the workspace to regenerate the inventory form
+ *  for.
+ */
+function regenerateInventoryFormFor(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _inventoryFormNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     if(sheet === null){ // inventory form has not yet been generated
-        inventoryFormModule(workbook, namespace).setup();
+        inventoryFormModule(workspace).setup();
     } else {
         // remove all items, repopulate
         const formUrl = sheet.getFormUrl();
         const oldForm = FormApp.openByUrl(formUrl);
         oldForm.getItems().forEach(item=>oldForm.deleteItem(item));
-        _populateInventoryForm(oldForm, workbook, namespace);
+        _populateInventoryForm(oldForm, workspace);
     }
-    createSettings(workbook, namespace).setInventoryFormStale(false);
+    createSettings(workspace).setInventoryFormStale(false);
 }
 // glob of inventorySheet
 /**
  * This module is responsible for the inventory sheet created by the application
  * in its host Google Spreadsheet.
  */
- function inventorySheetModule(workbook, namespace){
+function inventorySheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _inventorySheetNameFor,
-        (ns)=>_setupInventorySheet(workbook, ns)
+        ()=>_setupInventorySheet(workspace) // not just _setupInventorySheet
     );
 }
 function _inventorySheetNameFor(namespace){
     return nameFor("inventory", namespace);
 }
-function _setupInventorySheet(workbook, namespace){
-    const inventorySheet = workbook.insertSheet(_inventorySheetNameFor(namespace));
+function _setupInventorySheet(workspace){
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const inventorySheet = workspace.workbook.insertSheet(name);
     inventorySheet.setFrozenRows(1);
     const validation = SpreadsheetApp.newDataValidation()
         .requireNumberGreaterThanOrEqualTo(0)
@@ -1004,17 +1029,16 @@ function _setupInventorySheet(workbook, namespace){
     inventorySheet.appendRow(headers);
 }
 /**
- * @param {string|undefined} namespace
+ * @param {Workspace|undefined} workspace
  * @returns {ItemService} an instance of ItemService backed by a Google sheet as
  *  its repository
  */
-function createItemService(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_inventorySheetNameFor(namespace));
+function createItemService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = makeGoogleSheetsItemRepository(sheet);
-    const emails = createEmailService(workbook, namespace);
+    const emails = createEmailService(workspace);
     const service = new ItemService(repo, emails);
     return service;
 }
@@ -1053,13 +1077,13 @@ function testGoogleSheetsItemRepository(workbook){
 function onOpen(){
 	const ui = SpreadsheetApp.getUi();
 	ui.createMenu("G-WIT")
-		.addItem("Set up", "setup")
-		.addItem("Reset workspace", "resetWorkspace")
+		.addItem("Set up", setup.name)
+		.addItem("Reset workspace", resetWorkspace.name)
 		.addItem("Regenerate remove item form", regenerateRemoveItemFormFor.name)
 		.addSubMenu(ui.createMenu("Inventory form")
 			.addItem("Prime inventory form", primeInventoryForm.name)
 			.addItem("Send inventory form", sendInventoryForm.name)
-			.addItem("Regenerate inventory form", regenerateInventoryForm.name)
+			.addItem("Regenerate inventory form", regenerateInventoryFormFor.name)
 		)
 		.addSubMenu(ui.createMenu("Restock reminder")
 			.addItem("Prime restock reminder", primeRestockReminder.name)
@@ -1075,23 +1099,15 @@ function onOpen(){
  * mutates the current Google Sheet into a suitable environment for the program
  */
 function setup(){
-	const workbook = SpreadsheetApp.getActiveSpreadsheet();
-	setupWorkspace(workbook);
+	setupWorkspace();
 	SpreadsheetApp.getUi().alert("Setup complete!");
 }
 /**
  * Removes all the auto-generated sheets & triggers used by this app.
  */
 function resetWorkspace(){
-	const workbook = SpreadsheetApp.getActiveSpreadsheet();
-	deleteWorkspace(workbook);
+	deleteWorkspace();
 	setup();
-}
-/**
- * Repopulates the inventory form with the contents of the inventory sheet.
- */
-function regenerateInventoryForm(){
-	regenerateInventoryFormFor(SpreadsheetApp.getActiveSpreadsheet());
 }
 /**
  * Schedules the inventory form to be sent automatically according to the
@@ -1154,21 +1170,18 @@ function integrationTests(){
 /**
  * Use this to interface with the "New Item" form component of the
  * system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook
- * @param {string|undefined} namespace
+ * @param {Workspace|undefined} workspace the workspace to interface
+ *  with
  * @returns the "New Item" form component of the application
  */
-function newItemFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function newItemFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _newItemFormNameFor,
-        (ns)=>{
-            const form = _createNewItemForm(ns);
-            createSettings(workbook, namespace).setNewItemForm(form);
+        ()=>{
+            const form = _createNewItemForm(workspace.namespace);
+            createSettings(workspace).setNewItemForm(form);
             return form;
         },
         _onNewItemFormSubmit
@@ -1192,12 +1205,9 @@ function _createNewItemForm(namespace){
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
-    const mustBeAPositiveNumber = FormApp.createTextValidation()
-        .setHelpText("Must be a positive number.")
-        .requireNumberGreaterThan(0)
-        .build();
     const form = FormApp.create(_newItemFormNameFor(namespace));
     form.setDescription("Add a new item to the inventory.");
+    form.setCollectEmail(true);
     form.addTextItem()
         .setTitle("Item name")
         .setRequired(true);
@@ -1212,6 +1222,7 @@ function _createNewItemForm(namespace){
 function _onNewItemFormSubmit(event){
     const row = event.values;
     row.shift(); // remove first cell (timestamp)
+    const email = row.shift(); // remove second cell (email)
     const name = row[0];
     const quantity = parseInt(row[1]);
     const minimum = parseInt(row[2]);
@@ -1220,7 +1231,10 @@ function _onNewItemFormSubmit(event){
         (isNaN(quantity)) ? undefined : quantity,
         (isNaN(minimum)) ? undefined : minimum
     );
-    console.log("New item: " + JSON.stringify(item));
+    console.log({
+        event: `New item submitted by ${email}`,
+        item: item
+    });
     createItemService().handleNewItem(item);
     Workspace.current().itemsChanged();
 }
@@ -1229,17 +1243,14 @@ function _onNewItemFormSubmit(event){
  * This module is responsible for the Google Form used to remove an item type
  * from the inventory.
  */
-function removeItemFormModule(workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function removeItemFormModule(workspace=null) {
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _removeItemFormNameFor,
-        (ns) => {
-            const form = _createRemoveItemForm(workbook, ns);
-            createSettings(workbook, ns).setRemoveItemForm(form);
+        () => {
+            const form = _createRemoveItemForm(workspace);
+            createSettings(workspace).setRemoveItemForm(form);
             return form;
         },
         _onRemoveItemFormSubmit
@@ -1251,17 +1262,15 @@ Private functions
 function _removeItemFormNameFor(namespace="") {
     return nameFor("Remove item", namespace);
 }
-function _createRemoveItemForm(workbook, namespace) {
-    const form = FormApp.create(_removeItemFormNameFor(namespace));
+function _createRemoveItemForm(workspace) {
+    const form = FormApp.create(_removeItemFormNameFor(workspace.namespace));
     form.setDescription("Remove an existing item from the inventory.");
-    _populateRemoveItemForm(form, workbook, namespace);
+    form.setCollectEmail(true);
+    _populateRemoveItemForm(form, workspace);
     return form;
 }
-function _populateRemoveItemForm(form, workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const service = createItemService(workbook, namespace);
+function _populateRemoveItemForm(form, workspace) {
+    const service = createItemService(workspace);
     const itemNames = service.getAllEntities().map(item => item.name);
     if (itemNames.length === 0) {
         itemNames.push("---");
@@ -1276,55 +1285,61 @@ function _onRemoveItemFormSubmit(event) {
      * appended after the timestamp. The last value in the array is the one we
      * want, so grab that one.
      */
-    const name = event.values.at(-1);
-    createItemService().remove(name);
-    Workspace.current().itemsChanged();
-}
-function regenerateRemoveItemFormFor(workbook=null, namespace="") {
-    if (workbook === null) {
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
+    const name = lastNonEmpty(event.values);
+    console.log({
+        event: `Received remove item form from ${getEmailAddressFrom(event)}`,
+        itemName: name
+    });
+    if (name) {
+        createItemService().remove(name);
+        Workspace.current().itemsChanged();
+    } else {
+        console.log("Name is falsey, so nothing to remove.");
     }
-    const name = _removeItemFormNameFor(namespace);
-    const sheet = workbook.getSheetByName(name);
+}
+function regenerateRemoveItemFormFor(workspace=null) {
+    workspace = Workspace.currentOr(workspace);
+    const name = _removeItemFormNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     if (sheet === null) { // not generated yet
-        removeItemFormModule(workbook, namespace).setup();
+        removeItemFormModule(workspace).setup();
     } else {
         // remove old choices, repopulate
         const formUrl = sheet.getFormUrl();
         const form = FormApp.openByUrl(formUrl);
         form.getItems().forEach(item => form.deleteItem(item));
-        _populateRemoveItemForm(form, workbook, namespace);
+        _populateRemoveItemForm(form, workspace);
     }
 }
 // glob of settingSheet
 /**
  * This module is responsible for the settings sheet created by the application
  */
-function settingSheetModule(workbook, namespace){
+function settingSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _settingSheetNameFor,
-        (ns)=>_setupSettingSheet(workbook, ns)
+        ()=>_setupSettingSheet(workspace) // not just _setupSettingSheet
     );
 }
 function _settingSheetNameFor(namespace=""){
     return nameFor("settings", namespace);
 }
-function _setupSettingSheet(workbook, ns){
-    const sheet = workbook.insertSheet(_settingSheetNameFor(ns));
+function _setupSettingSheet(workspace){
+    const name = _settingSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.insertSheet(name);
     sheet.setFrozenRows(1);
     const headers = ["name", "value", "description"];
     sheet.appendRow(headers);
-    const service = createSettings(workbook, ns);
+    const service = createSettings(workspace);
     service.populateDefaults();
-    service.setWorkbook(workbook);
+    service.setWorkbook(workspace.workbook);
 }
-function createSettings(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_settingSheetNameFor(namespace));
+function createSettings(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _settingSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = _makeGoogleSheetsSettingRepository(sheet);
     const service = new Settings(
         (name) => repo.getEntityByKey(name),
@@ -1350,17 +1365,14 @@ function _makeGoogleSheetsSettingRepository(sheet){
  * This module is responsible for the Google Form used to add new users to the
  * user sheet.
  */
-function userFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function userFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _userFormNameFor,
-        (ns)=>{
-            const form = _createUserForm(ns);
-            createSettings(workbook, namespace).setUserForm(form);
+        ()=>{
+            const form = _createUserForm(workspace.namespace);
+            createSettings(workspace).setUserForm(form);
             return form;
         },
         _onUserFormSubmit
@@ -1420,16 +1432,17 @@ function _onUserFormSubmit(e){
  * This module is responsible for the user sheet created by the application in
  * its host Google Spreadsheet
  */
-function userSheetModule(workbook, namespace){
+function userSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _userSheetNameFor,
-        (ns)=>_setupUserSheet(workbook, ns)
+        ()=>_setupUserSheet(workspace) // not just _setupUserSheet
     );
 }
-function _setupUserSheet(workbook, namespace){
-    const userSheet = workbook.insertSheet(_userSheetNameFor(namespace));
+function _setupUserSheet(workspace){
+    const name = _userSheetNameFor(workspace.namespace);
+    const userSheet = workspace.workbook.insertSheet(name);
     userSheet.setFrozenRows(1);
     const headers = ["email", "wants log", "wants log reply", "wants report"];
     userSheet.appendRow(headers);
@@ -1453,15 +1466,13 @@ function _userSheetNameFor(namespace=""){
 }
 /**
  * Use this to access the UserService
- * @param {undefined|SpreadsheetApp.Spreadsheet} workbook
- * @param {undefined|string} namespace
+ * @param {Workspace|undefined} workspace the workspace to create the service in
  * @return {UserService} a UserService for interacting with this workbook
  */
-function createUserService(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_userSheetNameFor(namespace));
+function createUserService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _userSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = _makeGoogleSheetsUserRepository(sheet);
     const service = new UserService(repo);
     return service;
@@ -1504,7 +1515,10 @@ this does not automatically start handling forms, and is explicitly registered
 in _setupFormHandler
 */
 function onFormSubmit(e){
-    console.log("Received form submission: \n" + JSON.stringify(e));
+    console.log({
+        event: "Received Google form",
+        form: JSON.stringify(e)
+    });
     /*
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
@@ -1554,7 +1568,7 @@ class Workspace {
      * thus various forms should be regenerated.
      */
     itemsChanged() {
-        createSettings(this.workbook, this.namespace).setInventoryFormStale(true);
+        createSettings(this).setInventoryFormStale(true);
         regenerateRemoveItemFormFor();
     }
 }
@@ -1565,25 +1579,25 @@ even when used in the same file as the superclass.
 */
 class Component {
     /**
-     * @param {SpreadsheetApp.Spreadsheet} workbook
-     * @param {string} namespace
-     * @param {(string)=>string} namespaceToName
-     * @param {(string)=>Form|null|undefined} create
-     * @param {(FormEvent)=>void} onSubmit
+     * @param {Workspace} workspace the workspace this component exists in
+     * @param {(string)=>string} namespaceToName maps the namespace to the name
+     *  of the sheet for this component in that namespace
+     * @param {()=>Form|null|undefined} create creates this sheet if it doesn't
+     *  exist. It should return the form if one was created.
+     * @param {(FormEvent)=>void} onSubmit handles form submissions.
      */
-    constructor(workbook, namespace, namespaceToName, create, onSubmit){
-        this.workbook = workbook;
-        this.namespace = namespace;
-        this.name = namespaceToName(namespace);
+    constructor(workspace, namespaceToName, create, onSubmit){
+        this.workspace = workspace;
+        this.name = namespaceToName(workspace.namespace);
         this.create = create;
         this.onSubmit = onSubmit;
     }
     setup(){
         // does not bind 'this' context with just "this._doSetup"
-        ifSheetDoesNotExist(this.workbook, this.name, ()=>this._doSetup());
+        ifSheetDoesNotExist(this.workspace.workbook, this.name, ()=>this._doSetup());
     }
     _doSetup(){
-        const formOrMaybeNot = this.create(this.namespace); // NOT this.name
+        const formOrMaybeNot = this.create();
         if(formOrMaybeNot && formOrMaybeNot.setDestination){
             this._doSetupForm(formOrMaybeNot);
         }
@@ -1591,7 +1605,7 @@ class Component {
     _doSetupForm(form){
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET,
-            this.workbook.getId()
+            this.workspace.workbook.getId()
         );
         /*
         The form is created using the Google Forms service instead of the Sheets
@@ -1606,7 +1620,7 @@ class Component {
         // rename the sheet created by setDestination so it's easier to find
         // this URL solution doesn't work: https://stackoverflow.com/a/51484165
         const formId = form.getId();
-        const createdSheet = this.workbook.getSheets().filter(sheet => {
+        const createdSheet = this.workspace.workbook.getSheets().filter(sheet => {
             return null !== sheet.getFormUrl();
         }).find(sheet => {
             const form = FormApp.openByUrl(sheet.getFormUrl());
@@ -1616,34 +1630,43 @@ class Component {
         createdSheet.hideSheet();
     }
     delete(){
-        deleteSheet(this.workbook, this.name);
+        deleteSheet(this.workspace.workbook, this.name);
     }
     receiveForm(event){
         this.onSubmit(event);
     }
 }
-function allModulesFor(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function getEmailAddressFrom(form) {
+    return form.namedValues["Email Address"].at(-1);
+}
+/**
+ * Needed because of how Google Forms responses are formatted.
+ * @param {String[]} array the array to find the last non-empty string in
+ * @returns the last non-empty string in the given array
+ */
+function lastNonEmpty(array) {
+    return array.findLast(e => e !== "");
+}
+function allModulesFor(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return [
-        settingSheetModule(workbook, namespace), // must be first
-        inventorySheetModule(workbook, namespace),
-        userSheetModule(workbook, namespace),
-        userFormModule(workbook, namespace),
-        newItemFormModule(workbook, namespace),
-        inventoryFormModule(workbook, namespace),
-        removeItemFormModule(workbook, namespace)
+        settingSheetModule(workspace), // must be first
+        inventorySheetModule(workspace),
+        userSheetModule(workspace),
+        userFormModule(workspace),
+        newItemFormModule(workspace),
+        inventoryFormModule(workspace),
+        removeItemFormModule(workspace)
     ];
 }
 /**
  * Mutates the given workbook into a suitable environment for the application.
- * @param {SpreadsheetApp.Spreadsheet} workbook
- * @param {string|undefined} namespace - can specify for testing
+ * @param {Workspace|undefined} workspace the environment to mutate
  */
-function setupWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.setup());
-    _setupFormHandler(workbook);
+function setupWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.setup());
+    _setupFormHandler(workspace.workbook);
 }
 function _setupFormHandler(workbook){
     const triggers = ScriptApp.getProjectTriggers();
@@ -1655,9 +1678,10 @@ function _setupFormHandler(workbook){
             .create();
     }
 }
-function deleteWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.delete());
-    if("" === namespace){
+function deleteWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.delete());
+    if("" === workspace.namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
             return t.getHandlerFunction() === FORM_HANDLER_NAME;
@@ -1712,17 +1736,20 @@ function nameFor(resource, namespace=""){
 Unit tests
 */
 function testWorkspaceModule(){
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    deleteWorkspace(workbook, "test");
-    setupWorkspace(workbook, "test");
+    const workspace = new Workspace(
+        SpreadsheetApp.getActiveSpreadsheet(),
+        "test"
+    );
+    deleteWorkspace(workspace);
+    setupWorkspace(workspace);
     testNameFor();
     testEmailModule();
-    testGoogleSheetsItemRepository(workbook);
+    testGoogleSheetsItemRepository(workspace.workbook);
     /*
     only remove test sheets if tests are successful, as this allows us to
     diagnose errors if one of these tests fails
     */
-    deleteWorkspace(workbook, "test");
+    deleteWorkspace(workspace);
 }
 function testNameFor(){
     const sheetName = "foo";

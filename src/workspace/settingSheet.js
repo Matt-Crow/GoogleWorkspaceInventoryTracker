@@ -4,12 +4,12 @@
 
 
 
-function settingSheetModule(workbook, namespace){
+function settingSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _settingSheetNameFor,
-        (ns)=>_setupSettingSheet(workbook, ns)
+        ()=>_setupSettingSheet(workspace) // not just _setupSettingSheet
     );
 }
 
@@ -17,23 +17,23 @@ function _settingSheetNameFor(namespace=""){
     return nameFor("settings", namespace);
 }
 
-function _setupSettingSheet(workbook, ns){
-    const sheet = workbook.insertSheet(_settingSheetNameFor(ns));
+function _setupSettingSheet(workspace){
+    const name = _settingSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.insertSheet(name);
     sheet.setFrozenRows(1);
 
     const headers = ["name", "value", "description"];
     sheet.appendRow(headers);
 
-    const service = createSettings(workbook, ns);
+    const service = createSettings(workspace);
     service.populateDefaults();
-    service.setWorkbook(workbook);
+    service.setWorkbook(workspace.workbook);
 }
 
-function createSettings(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_settingSheetNameFor(namespace));
+function createSettings(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _settingSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = _makeGoogleSheetsSettingRepository(sheet);
     const service = new Settings(
         (name) => repo.getEntityByKey(name),

@@ -21,7 +21,11 @@ this does not automatically start handling forms, and is explicitly registered
 in _setupFormHandler
 */
 function onFormSubmit(e){
-    console.log("Received form submission: \n" + JSON.stringify(e));
+    console.log({
+        event: "Received Google form",
+        form: JSON.stringify(e)
+    });
+    
     /*
     ugly duck-typing, but it looks like e doesn't have any other way of knowing
     which form submitted it
@@ -76,7 +80,7 @@ class Workspace {
      * thus various forms should be regenerated.
      */
     itemsChanged() {
-        createSettings(this.workbook, this.namespace).setInventoryFormStale(true);
+        createSettings(this).setInventoryFormStale(true);
         regenerateRemoveItemFormFor();
     }
 }
@@ -88,27 +92,27 @@ even when used in the same file as the superclass.
 */
 class Component {
     /**
-     * @param {SpreadsheetApp.Spreadsheet} workbook 
-     * @param {string} namespace 
-     * @param {(string)=>string} namespaceToName
-     * @param {(string)=>Form|null|undefined} create
-     * @param {(FormEvent)=>void} onSubmit 
+     * @param {Workspace} workspace the workspace this component exists in
+     * @param {(string)=>string} namespaceToName maps the namespace to the name
+     *  of the sheet for this component in that namespace
+     * @param {()=>Form|null|undefined} create creates this sheet if it doesn't
+     *  exist. It should return the form if one was created.
+     * @param {(FormEvent)=>void} onSubmit handles form submissions.
      */
-    constructor(workbook, namespace, namespaceToName, create, onSubmit){
-        this.workbook = workbook;
-        this.namespace = namespace;
-        this.name = namespaceToName(namespace);
+    constructor(workspace, namespaceToName, create, onSubmit){
+        this.workspace = workspace;
+        this.name = namespaceToName(workspace.namespace);
         this.create = create;
         this.onSubmit = onSubmit;
     }
 
     setup(){
         // does not bind 'this' context with just "this._doSetup" 
-        ifSheetDoesNotExist(this.workbook, this.name, ()=>this._doSetup());
+        ifSheetDoesNotExist(this.workspace.workbook, this.name, ()=>this._doSetup());
     }
 
     _doSetup(){
-        const formOrMaybeNot = this.create(this.namespace); // NOT this.name
+        const formOrMaybeNot = this.create();
         if(formOrMaybeNot && formOrMaybeNot.setDestination){
             this._doSetupForm(formOrMaybeNot);
         }
@@ -117,7 +121,7 @@ class Component {
     _doSetupForm(form){
         form.setDestination(
             FormApp.DestinationType.SPREADSHEET, 
-            this.workbook.getId()
+            this.workspace.workbook.getId()
         );
 
         /*
@@ -135,7 +139,7 @@ class Component {
         // rename the sheet created by setDestination so it's easier to find
         // this URL solution doesn't work: https://stackoverflow.com/a/51484165
         const formId = form.getId();
-        const createdSheet = this.workbook.getSheets().filter(sheet => {
+        const createdSheet = this.workspace.workbook.getSheets().filter(sheet => {
             return null !== sheet.getFormUrl();
         }).find(sheet => {
             const form = FormApp.openByUrl(sheet.getFormUrl());
@@ -146,7 +150,7 @@ class Component {
     }
 
     delete(){
-        deleteSheet(this.workbook, this.name);
+        deleteSheet(this.workspace.workbook, this.name);
     }
 
     receiveForm(event){
@@ -154,30 +158,41 @@ class Component {
     }
 }
 
-function allModulesFor(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function getEmailAddressFrom(form) {
+    return form.namedValues["Email Address"].at(-1);
+}
+
+/**
+ * Needed because of how Google Forms responses are formatted.
+ * @param {String[]} array the array to find the last non-empty string in
+ * @returns the last non-empty string in the given array
+ */
+function lastNonEmpty(array) {
+    return array.findLast(e => e !== "");
+}
+
+function allModulesFor(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return [
-        settingSheetModule(workbook, namespace), // must be first
-        inventorySheetModule(workbook, namespace),
-        userSheetModule(workbook, namespace),
-        userFormModule(workbook, namespace),
-        newItemFormModule(workbook, namespace),
-        inventoryFormModule(workbook, namespace),
-        removeItemFormModule(workbook, namespace)
+        settingSheetModule(workspace), // must be first
+        inventorySheetModule(workspace),
+        userSheetModule(workspace),
+        userFormModule(workspace),
+        newItemFormModule(workspace),
+        inventoryFormModule(workspace),
+        removeItemFormModule(workspace)
     ];
 }
 
 
 /**
  * Mutates the given workbook into a suitable environment for the application.
- * @param {SpreadsheetApp.Spreadsheet} workbook 
- * @param {string|undefined} namespace - can specify for testing
+ * @param {Workspace|undefined} workspace the environment to mutate
  */
-function setupWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.setup());
-    _setupFormHandler(workbook);
+function setupWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.setup());
+    _setupFormHandler(workspace.workbook);
 }
 
 function _setupFormHandler(workbook){
@@ -191,9 +206,10 @@ function _setupFormHandler(workbook){
     }
 }
 
-function deleteWorkspace(workbook, namespace=""){
-    allModulesFor(workbook, namespace).forEach(m=>m.delete());
-    if("" === namespace){
+function deleteWorkspace(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    allModulesFor(workspace).forEach(m=>m.delete());
+    if("" === workspace.namespace){
         const triggers = ScriptApp.getProjectTriggers();
         const formSubmitTrigger = triggers.find(t => {
             return t.getHandlerFunction() === FORM_HANDLER_NAME;
@@ -257,19 +273,22 @@ Unit tests
 */
 
 function testWorkspaceModule(){
-    const workbook = SpreadsheetApp.getActiveSpreadsheet();
-    deleteWorkspace(workbook, "test");
-    setupWorkspace(workbook, "test");
+    const workspace = new Workspace(
+        SpreadsheetApp.getActiveSpreadsheet(),
+        "test"
+    );
+    deleteWorkspace(workspace);
+    setupWorkspace(workspace);
 
     testNameFor();
     testEmailModule();
-    testGoogleSheetsItemRepository(workbook);
+    testGoogleSheetsItemRepository(workspace.workbook);
 
     /*
     only remove test sheets if tests are successful, as this allows us to
     diagnose errors if one of these tests fails
     */
-    deleteWorkspace(workbook, "test");
+    deleteWorkspace(workspace);
 }
 
 function testNameFor(){

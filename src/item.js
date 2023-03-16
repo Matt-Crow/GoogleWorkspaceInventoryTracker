@@ -89,12 +89,12 @@ class ItemService {
     }
 
     /**
-     * @returns {Item[]} the items that are below their minimum quantities.
+     * @returns {Item[]} the items that are at or below their minimum quantities
      */
     getItemsToRestock(){
         return this.repository
             .getAllEntities()
-            .filter(item => item.quantity < item.minimum)
+            .filter(item => item.quantity <= item.minimum)
             .map(item => item.copy());
     }
 
@@ -234,13 +234,19 @@ function testItemService(){
 function testGetItemsToRestock(){
     const itemComparator = (a, b) => a.dataEquals(b);
     const expected = new Item("foo", 3, 4);
-    const notExpected = new Item("bar", 4, 3);
-    const repo = makeInMemoryItemRepository([expected, notExpected]);
+    const minimumEqualQuantity = new Item("bar", 3, 3);
+    const notExpected = new Item("baz", 4, 3);
+    const repo = makeInMemoryItemRepository([
+        expected, 
+        minimumEqualQuantity, 
+        notExpected
+    ]);
     const sut = new ItemService(repo, {});
 
     const actual = sut.getItemsToRestock();
 
     assertContains(expected, actual, itemComparator);
+    assertContains(minimumEqualQuantity, actual, itemComparator);
     assertDoesNotContain(notExpected, actual, itemComparator);
 }
 

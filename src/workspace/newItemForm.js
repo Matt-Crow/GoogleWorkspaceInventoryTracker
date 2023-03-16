@@ -8,21 +8,19 @@
 /**
  * Use this to interface with the "New Item" form component of the 
  * system.
- * @param {SpreadsheetApp.Spreadsheet|null} workbook 
- * @param {string|undefined} namespace 
+ * @param {Workspace|undefined} workspace the workspace to interface
+ *  with 
  * @returns the "New Item" form component of the application
  */
-function newItemFormModule(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
+function newItemFormModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _newItemFormNameFor,
-        (ns)=>{
-            const form = _createNewItemForm(ns);
-            createSettings(workbook, namespace).setNewItemForm(form);
+        ()=>{
+            const form = _createNewItemForm(workspace.namespace);
+            createSettings(workspace).setNewItemForm(form);
             return form;
         },
         _onNewItemFormSubmit
@@ -51,13 +49,10 @@ function _createNewItemForm(namespace){
         .setHelpText("Must be a non-negative number.")
         .requireNumberGreaterThanOrEqualTo(0)
         .build();
-    const mustBeAPositiveNumber = FormApp.createTextValidation()
-        .setHelpText("Must be a positive number.")
-        .requireNumberGreaterThan(0)
-        .build();
     
     const form = FormApp.create(_newItemFormNameFor(namespace));
     form.setDescription("Add a new item to the inventory.");
+    form.setCollectEmail(true);
 
     form.addTextItem()
         .setTitle("Item name")
@@ -77,6 +72,7 @@ function _createNewItemForm(namespace){
 function _onNewItemFormSubmit(event){
     const row = event.values;
     row.shift(); // remove first cell (timestamp)
+    const email = row.shift(); // remove second cell (email)
     
     const name = row[0];
     const quantity = parseInt(row[1]);
@@ -87,7 +83,11 @@ function _onNewItemFormSubmit(event){
         (isNaN(quantity)) ? undefined : quantity,
         (isNaN(minimum)) ? undefined : minimum
     );
-    console.log("New item: " + JSON.stringify(item));
+
+    console.log({
+        event: `New item submitted by ${email}`,
+        item: item
+    });
 
     createItemService().handleNewItem(item);
     Workspace.current().itemsChanged();

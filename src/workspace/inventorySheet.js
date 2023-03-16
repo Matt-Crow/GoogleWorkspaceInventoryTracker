@@ -5,12 +5,12 @@
 
 
 
- function inventorySheetModule(workbook, namespace){
+function inventorySheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook, 
-        namespace, 
+        workspace, 
         _inventorySheetNameFor,
-        (ns)=>_setupInventorySheet(workbook, ns)
+        ()=>_setupInventorySheet(workspace) // not just _setupInventorySheet
     );
 }
 
@@ -18,8 +18,9 @@ function _inventorySheetNameFor(namespace){
     return nameFor("inventory", namespace);
 }
 
-function _setupInventorySheet(workbook, namespace){
-    const inventorySheet = workbook.insertSheet(_inventorySheetNameFor(namespace));
+function _setupInventorySheet(workspace){
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const inventorySheet = workspace.workbook.insertSheet(name);
     inventorySheet.setFrozenRows(1);
 
     const validation = SpreadsheetApp.newDataValidation()
@@ -35,17 +36,16 @@ function _setupInventorySheet(workbook, namespace){
 }
 
 /**
- * @param {string|undefined} namespace
+ * @param {Workspace|undefined} workspace
  * @returns {ItemService} an instance of ItemService backed by a Google sheet as 
  *  its repository
  */
-function createItemService(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_inventorySheetNameFor(namespace));
+function createItemService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _inventorySheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = makeGoogleSheetsItemRepository(sheet);
-    const emails = createEmailService(workbook, namespace);
+    const emails = createEmailService(workspace);
     const service = new ItemService(repo, emails);
     return service;
 }

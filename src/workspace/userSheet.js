@@ -5,18 +5,19 @@
 
 
 
-function userSheetModule(workbook, namespace){
+function userSheetModule(workspace=null){
+    workspace = Workspace.currentOr(workspace);
     return new Component(
-        workbook,
-        namespace,
+        workspace,
         _userSheetNameFor,
-        (ns)=>_setupUserSheet(workbook, ns)
+        ()=>_setupUserSheet(workspace) // not just _setupUserSheet
     );
 }
 
 
-function _setupUserSheet(workbook, namespace){
-    const userSheet = workbook.insertSheet(_userSheetNameFor(namespace));
+function _setupUserSheet(workspace){
+    const name = _userSheetNameFor(workspace.namespace);
+    const userSheet = workspace.workbook.insertSheet(name);
     userSheet.setFrozenRows(1);
 
     const headers = ["email", "wants log", "wants log reply", "wants report"];
@@ -47,15 +48,13 @@ function _userSheetNameFor(namespace=""){
 
 /**
  * Use this to access the UserService
- * @param {undefined|SpreadsheetApp.Spreadsheet} workbook 
- * @param {undefined|string} namespace
+ * @param {Workspace|undefined} workspace the workspace to create the service in
  * @return {UserService} a UserService for interacting with this workbook 
  */
-function createUserService(workbook=null, namespace=""){
-    if(workbook === null){
-        workbook = SpreadsheetApp.getActiveSpreadsheet();
-    }
-    const sheet = workbook.getSheetByName(_userSheetNameFor(namespace));
+function createUserService(workspace=null){
+    workspace = Workspace.currentOr(workspace);
+    const name = _userSheetNameFor(workspace.namespace);
+    const sheet = workspace.workbook.getSheetByName(name);
     const repo = _makeGoogleSheetsUserRepository(sheet);
     const service = new UserService(repo);
     return service;
