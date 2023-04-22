@@ -159,7 +159,7 @@ class Component {
 }
 
 function getEmailAddressFrom(form) {
-    return form.namedValues["Email Address"].at(-1);
+    return lastNonEmpty(form.namedValues["Email Address"]);
 }
 
 /**

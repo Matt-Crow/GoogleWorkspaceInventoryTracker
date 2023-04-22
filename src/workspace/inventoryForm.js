@@ -67,8 +67,10 @@ function _onInventoryFormSubmit(e){
     */
     const fields = [];
     for(let [k, v] of Object.entries(e.namedValues)){
-        //                                       last item
-        fields.push({name: k, quantity: parseInt(v.at(-1))});
+        fields.push({
+            name: k, 
+            quantity: parseInt(lastNonEmpty(v))
+        });
     }
 
     const items = fields.filter(answerToQuestion => {

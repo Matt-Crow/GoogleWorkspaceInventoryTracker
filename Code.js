@@ -957,8 +957,10 @@ function _onInventoryFormSubmit(e){
     */
     const fields = [];
     for(let [k, v] of Object.entries(e.namedValues)){
-        //                                       last item
-        fields.push({name: k, quantity: parseInt(v.at(-1))});
+        fields.push({
+            name: k,
+            quantity: parseInt(lastNonEmpty(v))
+        });
     }
     const items = fields.filter(answerToQuestion => {
         return !isNaN(answerToQuestion.quantity);
@@ -1637,7 +1639,7 @@ class Component {
     }
 }
 function getEmailAddressFrom(form) {
-    return form.namedValues["Email Address"].at(-1);
+    return lastNonEmpty(form.namedValues["Email Address"]);
 }
 /**
  * Needed because of how Google Forms responses are formatted.
